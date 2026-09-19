@@ -52,7 +52,7 @@ const countryStats = computed(() => {
               <article v-for="player in visible" :key="player.id" :class="['player-row', {'top-three': player.rank <= 3}]">
                 <span class="rank">{{ player.rank }}</span>
                 <span class="flag" :title="countryMeta(player.country, lang).name">{{ countryMeta(player.country, lang).flag }}</span>
-                <div class="player-cell"><button class="player-name-button" @click="selected = player">{{ player.name }}</button><small class="mobile-demon">{{ player.demon }}</small></div>
+                <div class="player-cell"><button class="player-name-button" @click.stop="selected = player">{{ player.name }}</button><small class="mobile-demon">{{ player.demon }}</small></div>
                 <strong class="points">{{ Number(player.points).toFixed(2) }}</strong>
                 <span class="demon">{{ player.demon || '—' }}</span>
                 <span class="global-rank">#{{ player.globalRank || '—' }}</span>

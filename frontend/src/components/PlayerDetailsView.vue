@@ -27,7 +27,7 @@ const sections = computed(() => {
     {key: 'advanced', label: 'Advanced'},
     {key: 'extended', label: 'Extended'},
     {key: 'unbounded', label: 'Unbounded'},
-    {key: 'progress', label: lang === 'en' ? 'In progress' : 'В процессе'},
+    {key: 'progress', label: props.lang === 'en' ? 'In progress' : 'В процессе'},
     {key: 'verified', label: 'Verified'},
   ]
   const result = []
@@ -49,7 +49,7 @@ async function load() {
     if (!settled) {
       settled = true
       levelsLoading.value = false
-      levelsError.value = lang === 'en' ? 'Demonlist is taking too long. Try again.' : 'Demonlist долго не отвечает. Попробуйте ещё раз.'
+      levelsError.value = props.lang === 'en' ? 'Demonlist is taking too long. Try again.' : 'Demonlist долго не отвечает. Попробуйте ещё раз.'
       console.warn('[player-details] timeout for', playerName)
     }
   }, 12000))
@@ -85,7 +85,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="modal-backdrop" @mousedown.self="$emit('close')">
+  <div class="modal-backdrop" @click.self="$emit('close')">
     <section class="modal player-details-modal" role="dialog" aria-modal="true">
       <button class="modal-close" @click="$emit('close')">×</button>
       <div class="pdetails-hero">
