@@ -16,9 +16,9 @@ defineEmits(['leaderboard', 'events'])
     </div>
     <section class="community-info">
       <h2>{{ lang === 'en' ? 'Information' : 'Информация' }}</h2>
-      <div class="community-contact"><h3>{{ lang === 'en' ? 'Admin' : 'Админ' }}</h3><p>Discord: <a href="https://discord.com/users/.samoletik" target="_blank" rel="noopener">@.samoletik</a></p><p>Telegram: <a href="https://t.me/samoletik" target="_blank" rel="noopener">@samoletik</a></p></div>
-      <div class="community-contact"><h3>{{ lang === 'en' ? 'Security and backend by' : 'За безопасность и бэкенд отвечал' }}</h3><p>Discord: <a href="https://discord.com/users/rimix.98" target="_blank" rel="noopener">@rimix.98</a></p><p>Telegram: <a href="https://t.me/Rimix980" target="_blank" rel="noopener">@Rimix980</a></p></div>
-      <div class="community-contact"><h3>{{ lang === 'en' ? 'Site admin' : 'Админ сайта' }}</h3><p>gmdprocessor</p></div>
+      <div class="community-contact"><h3>{{ lang === 'en' ? 'SMLT host' : 'Хост SMLT' }}</h3><p>Discord: <a href="https://discord.com/users/.samoletik" target="_blank" rel="noopener">@.samoletik</a></p><p>Telegram: <a href="https://t.me/samoletik" target="_blank" rel="noopener">@samoletik</a></p><p>GitHub: <a href="https://github.com/samoletix" target="_blank" rel="noopener">@samoletix</a></p></div>
+      <div class="community-contact"><h3>{{ lang === 'en' ? 'Site admin' : 'Админ сайта' }}</h3><p>gmdprocessor</p><p>GitHub: <a href="https://github.com/vakisnn-gd" target="_blank" rel="noopener">@vakisnn-gd</a></p></div>
+      <div class="community-contact"><h3>{{ lang === 'en' ? 'Former admin' : 'Бывший админ' }}</h3><p>Discord: <a href="https://discord.com/users/rimix.98" target="_blank" rel="noopener">@rimix.98</a></p><p>Telegram: <a href="https://t.me/Rimix980" target="_blank" rel="noopener">@Rimix980</a></p><p>GitHub: <a href="https://github.com/rimix98" target="_blank" rel="noopener">@rimix98</a></p></div>
     </section>
   </div>
 </template>
