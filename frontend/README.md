@@ -25,8 +25,8 @@ corepack pnpm dev
 corepack pnpm run build
 ```
 
-Vite записывает результат в `/opt/smlt/frontend-build`. Рабочую сборку Go-сервис
-читает из `/opt/smlt/frontend-dist`.
+Локальная сборка появится в соседней папке `../frontend-build`. На VPS готовая
+сборка отдельно переносится в рабочую директорию сайта.
 
 ## Доступ и выкладка
 
