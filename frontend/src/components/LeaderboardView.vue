@@ -2,10 +2,12 @@
 import { computed, ref } from 'vue'
 import { countryMeta } from '../data'
 import RecentChanges from './RecentChanges.vue'
+import PlayerDetailsView from './PlayerDetailsView.vue'
 
 const props = defineProps({players: Array, changes: Array, loading: Boolean, error: String, lang: String, isAdmin: Boolean})
 defineEmits(['edit', 'delete', 'retry'])
 const search = ref('')
+const selected = ref(null)
 const country = ref('ALL')
 
 const sorted = computed(() => [...(props.players || [])].sort((a, b) => Number(b.points) - Number(a.points) || a.name.localeCompare(b.name)))
@@ -42,7 +44,7 @@ const countryStats = computed(() => {
           <article v-for="player in visible" :key="player.id" :class="['player-row', {'top-three': player.rank <= 3}]">
             <span class="rank">{{ player.rank }}</span>
             <span class="flag" :title="countryMeta(player.country, lang).name">{{ countryMeta(player.country, lang).flag }}</span>
-            <div class="player-cell"><a v-if="player.gdlId" :href="`https://demonlist.org/profile/${player.gdlId}`" target="_blank" rel="noopener">{{ player.name }}</a><strong v-else>{{ player.name }}</strong><small class="mobile-demon">{{ player.demon }}</small></div>
+            <div class="player-cell"><button class="player-name-button" @click="selected = player">{{ player.name }}</button><small class="mobile-demon">{{ player.demon }}</small></div>
             <strong class="points">{{ Number(player.points).toFixed(2) }}</strong>
             <span class="demon">{{ player.demon || '—' }}</span>
             <span class="global-rank">#{{ player.globalRank || '—' }}</span>
@@ -69,5 +71,6 @@ const countryStats = computed(() => {
         <div class="country-list"><button v-for="([code, count]) in countryStats" :key="code" @click="country = code"><span>{{ countryMeta(code, lang).flag }}</span><span>{{ countryMeta(code, lang).name }}</span><strong>{{ count }}</strong></button></div>
       </section>
     </div>
+    <PlayerDetailsView v-if="selected" :player="selected" :players="sorted" :lang="lang" @close="selected = null" @open="selected = $event" />
   </div>
 </template>
