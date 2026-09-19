@@ -1,0 +1,21 @@
+# Secrets and production artefacts
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+
+# Frontend dependencies and builds
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Go build artefacts
+backend/server
+backend/server.new
+backend/*.test
+
+# Local files
+*.log
+.DS_Store

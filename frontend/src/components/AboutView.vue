@@ -1,0 +1,24 @@
+<script setup>
+defineProps({lang: String})
+defineEmits(['leaderboard', 'events'])
+</script>
+
+<template>
+  <div class="page community-page">
+    <section class="community-intro">
+      <h1>{{ lang === 'en' ? 'What is SMLT?' : 'Что такое SMLT?' }}</h1>
+      <p>{{ lang === 'en' ? 'SMLT is a Discord server where we hold events: collaborations, tournaments, level part runs, and even Minecraft games.' : 'SMLT — это дискорд-сервер, где происходят разные ивенты: коллабы, турниры, прохождения уровней по частям и даже игры в Майнкрафте.' }}</p>
+      <p>{{ lang === 'en' ? 'Every member of the server is a member of SMLT, regardless of their skill. The idea behind our server is ' : 'Все участники сервера — участники SMLT, независимо от их скилла. Идея нашего сервера — ' }}<strong>{{ lang === 'en' ? 'fun.' : 'удовольствие.' }}</strong></p>
+    </section>
+    <div class="community-links">
+      <button @click="$emit('leaderboard')"><strong>{{ lang === 'en' ? 'Leaderboard' : 'Лидерборд' }}</strong><span>{{ lang === 'en' ? 'The best SMLT players' : 'Лучшие игроки SMLT' }}</span></button>
+      <button @click="$emit('events')"><strong>{{ lang === 'en' ? 'SMLT projects' : 'Проекты SMLT' }}</strong><span>{{ lang === 'en' ? 'Collabs and community events' : 'Коллабы и ивенты сообщества' }}</span></button>
+    </div>
+    <section class="community-info">
+      <h2>{{ lang === 'en' ? 'Information' : 'Информация' }}</h2>
+      <div class="community-contact"><h3>{{ lang === 'en' ? 'Admin' : 'Админ' }}</h3><p>Discord: <a href="https://discord.com/users/.samoletik" target="_blank" rel="noopener">@.samoletik</a></p><p>Telegram: <a href="https://t.me/samoletik" target="_blank" rel="noopener">@samoletik</a></p></div>
+      <div class="community-contact"><h3>{{ lang === 'en' ? 'Security and backend by' : 'За безопасность и бэкенд отвечал' }}</h3><p>Discord: <a href="https://discord.com/users/rimix.98" target="_blank" rel="noopener">@rimix.98</a></p><p>Telegram: <a href="https://t.me/Rimix980" target="_blank" rel="noopener">@Rimix980</a></p></div>
+      <div class="community-contact"><h3>{{ lang === 'en' ? 'Site admin' : 'Админ сайта' }}</h3><p>gmdprocessor</p></div>
+    </section>
+  </div>
+</template>
