@@ -73,6 +73,7 @@ func main() {
 	http.HandleFunc("/api/auth", sec(rateLimitMiddleware("auth", 15, bodyLimitMiddleware(methodCheck("POST", handleAuth)))))
 	http.HandleFunc("/api/health", corsMiddleware(methodCheck("GET", handleHealth)))
 	http.HandleFunc("/api/search-demonlist", sec(methodCheck("GET", rateLimitMiddleware("demonlist", 30, handleSearchDemonlist))))
+	http.HandleFunc("/api/player-levels", sec(methodCheck("GET", rateLimitMiddleware("demonlist", 30, handlePlayerLevels))))
 
 	fmt.Println("========================================")
 	fmt.Println("  SMLT Leaderboard - smlt.lol")

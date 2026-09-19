@@ -8,11 +8,13 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
 
 const demonlistBase = "https://pointercrate.com/api/v1"
+const demonlistApiBase = "https://api.demonlist.org"
 
 var demonlistClient = &http.Client{Timeout: 10 * time.Second}
 
@@ -201,6 +203,135 @@ func handleSearchDemonlist(w http.ResponseWriter, r *http.Request) {
 		"points":     best.Score,
 		"demon":      hardestDemon,
 		"globalRank": best.Rank,
+	})
+}
+
+type demonlistLevel struct {
+	ID        int    `json:"id"`
+	Name      string `json:"name"`
+	Placement int    `json:"placement"`
+	VideoURL  string `json:"video_url,omitempty"`
+}
+
+type demonlistLevels struct {
+	Hardest  *demonlistLevel  `json:"hardest"`
+	Main     []demonlistLevel `json:"main"`
+	Extended []demonlistLevel `json:"extended"`
+	Advanced []demonlistLevel `json:"advanced"`
+	Unbounded []demonlistLevel `json:"unbounded"`
+	Progress []demonlistLevel `json:"progress"`
+	Verified []demonlistLevel `json:"verified"`
+}
+
+func handlePlayerLevels(w http.ResponseWriter, r *http.Request) {
+	id := strings.TrimSpace(r.URL.Query().Get("id"))
+	name := strings.TrimSpace(r.URL.Query().Get("name"))
+
+	if id == "" && name == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Не указан игрок"})
+		return
+	}
+
+	if id == "" {
+		searchReq, err := http.NewRequest("GET", demonlistUsersURL+"?limit=5&search="+url.QueryEscape(name), nil)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Ошибка запроса"})
+			return
+		}
+		searchReq.Header.Set("User-Agent", "SMLT-Leaderboard/1.0")
+		searchResp, err := demonlistClient.Do(searchReq)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadGateway)
+			json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Не удалось подключиться к demonlist.org"})
+			return
+		}
+		searchBody, err := io.ReadAll(io.LimitReader(searchResp.Body, 2<<20))
+		searchResp.Body.Close()
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadGateway)
+			json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Ошибка чтения ответа"})
+			return
+		}
+		var search demonlistUserResponse
+		if err := json.Unmarshal(searchBody, &search); err != nil || len(search.Data.Users) == 0 {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Игрок не найден на demonlist.org"})
+			return
+		}
+		found := search.Data.Users[0]
+		for _, user := range search.Data.Users {
+			if strings.EqualFold(user.Username, name) {
+				found = user
+				break
+			}
+		}
+		id = strconv.FormatInt(found.ID, 10)
+	}
+
+	req, err := http.NewRequest("GET", demonlistApiBase+"/user/get?id="+url.QueryEscape(id), nil)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Ошибка запроса"})
+		return
+	}
+	req.Header.Set("User-Agent", "SMLT-Leaderboard/1.0")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := demonlistClient.Do(req)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadGateway)
+		json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Не удалось подключиться к demonlist.org"})
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Игрок не найден на demonlist.org"})
+		return
+	}
+
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadGateway)
+		json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Ошибка чтения ответа"})
+		return
+	}
+
+	var parsed struct {
+		Data struct {
+			Username  string          `json:"username"`
+			Placement int             `json:"placement"`
+			Levels    demonlistLevels `json:"levels"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(body, &parsed); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadGateway)
+		json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Некорректный ответ demonlist.org"})
+		return
+	}
+
+	log.Printf("[DEMONLIST] Levels for %s (place #%d)", parsed.Data.Username, parsed.Data.Placement)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":   true,
+		"id":        id,
+		"username":  parsed.Data.Username,
+		"placement": parsed.Data.Placement,
+		"levels":    parsed.Data.Levels,
 	})
 }
 

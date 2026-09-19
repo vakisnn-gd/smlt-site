@@ -25,6 +25,7 @@ export const api = {
   login: payload => request('/api/auth', {method: 'POST', body: JSON.stringify(payload)}),
   logout: () => request('/api/logout', {method: 'POST'}),
   search: name => request(`/api/search-demonlist?name=${encodeURIComponent(name)}`),
+  levels: (gdlId, name) => request(`/api/player-levels?id=${encodeURIComponent(gdlId || '')}&name=${encodeURIComponent(name || '')}`),
   addPlayer: player => request('/api/players', {method: 'POST', body: JSON.stringify(player)}),
   updatePlayer: (oldName, player) => request(`/api/players/${encodeURIComponent(oldName)}`, {method: 'PUT', body: JSON.stringify(player)}),
   deletePlayer: name => request(`/api/players/${encodeURIComponent(name)}`, {method: 'DELETE'}),

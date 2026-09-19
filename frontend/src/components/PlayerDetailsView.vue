@@ -1,26 +1,87 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { api } from '../api'
 import { countryMeta } from '../data'
 
 const props = defineProps({player: Object, lang: String, players: Array})
 const emit = defineEmits(['close'])
 
 const sorted = computed(() => [...(props.players || [])].sort((a, b) => Number(b.points) - Number(a.points) || a.name.localeCompare(b.name)))
-const total = computed(() => sorted.value.length)
-const index = computed(() => sorted.value.findIndex(p => p.id === props.player.id))
-const above = computed(() => index.value > 0 ? sorted.value[index.value - 1] : null)
-const below = computed(() => (index.value >= 0 && index.value < total.value - 1) ? sorted.value[index.value + 1] : null)
 const countryRank = computed(() => {
   const same = sorted.value.filter(p => p.country === props.player.country)
   const pos = same.findIndex(p => p.id === props.player.id)
-  return {pos: pos + 1, total: same.length}
+  return pos + 1
 })
+const countryTotal = computed(() => sorted.value.filter(p => p.country === props.player.country).length)
+
+const records = ref(null)
+const levelsLoading = ref(false)
+const levelsError = ref('')
+const profileId = computed(() => Number(records.value?.id || props.player.gdlId) || 0)
+
+const sections = computed(() => {
+  const l = records.value?.levels
+  if (!l) return []
+  const defs = [
+    {key: 'main', label: 'Main'},
+    {key: 'advanced', label: 'Advanced'},
+    {key: 'extended', label: 'Extended'},
+    {key: 'unbounded', label: 'Unbounded'},
+    {key: 'progress', label: lang === 'en' ? 'In progress' : 'В процессе'},
+    {key: 'verified', label: 'Verified'},
+  ]
+  const result = []
+  for (const def of defs) {
+    const items = l[def.key] || []
+    if (items.length) result.push({...def, items})
+  }
+  return result
+})
+
+async function load() {
+  const playerName = props.player.name
+  const gdlId = props.player.gdlId
+  records.value = null
+  levelsError.value = ''
+  levelsLoading.value = true
+  let settled = false
+  const guard = new Promise(resolve => setTimeout(() => {
+    if (!settled) {
+      settled = true
+      levelsLoading.value = false
+      levelsError.value = lang === 'en' ? 'Demonlist is taking too long. Try again.' : 'Demonlist долго не отвечает. Попробуйте ещё раз.'
+      console.warn('[player-details] timeout for', playerName)
+    }
+  }, 12000))
+  try {
+    const data = await Promise.race([api.levels(gdlId, playerName), guard.then(() => null)])
+    if (settled) return
+    settled = true
+    records.value = data
+    console.info('[player-details]', playerName, 'levels:', Object.keys(data.levels || {}).join(', ') || 'none')
+  } catch (err) {
+    if (!settled) {
+      settled = true
+      levelsError.value = err.message
+      console.error('[player-details] error for', playerName, err)
+    }
+  } finally {
+    levelsLoading.value = false
+  }
+}
+watch(() => props.player, load, {immediate: true})
 
 function onKeydown(event) {
   if (event.key === 'Escape') emit('close')
 }
-onMounted(() => window.addEventListener('keydown', onKeydown))
-onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
+onMounted(() => {
+  window.addEventListener('keydown', onKeydown)
+  document.body.style.overflow = 'hidden'
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeydown)
+  document.body.style.overflow = ''
+})
 </script>
 
 <template>
@@ -42,16 +103,29 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
       </div>
       <p class="pdetails-demon">{{ lang === 'en' ? 'Hardest demon' : 'Сложнейший демон' }}: <strong>{{ player.demon || '—' }}</strong></p>
       <div class="pdetails-chips">
-        <span class="pdetails-chip">{{ lang === 'en' ? 'Player' : 'Игрок' }} {{ countryRank.pos }} / {{ countryRank.total }} {{ lang === 'en' ? 'of' : 'из' }} {{ countryMeta(player.country, lang).name }}</span>
-        <a v-if="player.gdlId" class="pdetails-chip pdetails-link" :href="`https://demonlist.org/profile/${player.gdlId}`" target="_blank" rel="noopener">Demonlist ↗</a>
+        <span class="pdetails-chip">{{ lang === 'en' ? 'Player' : 'Игрок' }} {{ countryRank }} / {{ countryTotal }} {{ lang === 'en' ? 'of' : 'из' }} {{ countryMeta(player.country, lang).name }}</span>
+        <a v-if="profileId" class="pdetails-chip pdetails-link" :href="`https://demonlist.org/profile/${profileId}`" target="_blank" rel="noopener">Demonlist ↗</a>
       </div>
-      <div v-if="above || below" class="pdetails-neighbors">
-        <button v-if="above" class="pdetails-neighbor" @click="$emit('close'); $emit('open', above)"><small>{{ lang === 'en' ? 'Above' : 'Выше' }} · #{{ above.rank }}</small><span>{{ above.name }}</span></button>
-        <button v-else class="pdetails-neighbor placeholder"><small>{{ lang === 'en' ? 'Above' : 'Выше' }}</small><span>—</span></button>
-        <button v-if="below" class="pdetails-neighbor" @click="$emit('close'); $emit('open', below)"><small>{{ lang === 'en' ? 'Below' : 'Ниже' }} · #{{ below.rank }}</small><span>{{ below.name }}</span></button>
-        <button v-else class="pdetails-neighbor placeholder"><small>{{ lang === 'en' ? 'Below' : 'Ниже' }}</small><span>—</span></button>
+      <a v-if="profileId" :href="`https://demonlist.org/profile/${profileId}`" class="primary-button pdetails-open" target="_blank" rel="noopener">{{ lang === 'en' ? 'Open on Demonlist' : 'Открыть на Demonlist' }}</a>
+      <div class="pdetails-levels">
+        <div class="pdetails-levels-head"><h3>{{ lang === 'en' ? 'Completed levels' : 'Пройденные уровни' }}</h3><span v-if="levelsLoading" class="mini-loader"></span></div>
+        <div v-if="levelsLoading" class="pdetails-levels-state">{{ lang === 'en' ? 'Loading levels…' : 'Загружаем уровни…' }}</div>
+        <p v-else-if="levelsError" class="form-error">{{ levelsError }}</p>
+        <template v-else-if="sections.length">
+          <section v-for="section in sections" :key="section.key" class="pdetails-subsection">
+            <div class="pdetails-subsection-head"><h4>{{ section.label }}</h4><span>{{ section.items.length }}</span></div>
+            <ol class="pdetails-level-list">
+              <li v-for="item in section.items" :key="item.id">
+                <span class="pdetails-lvl-pos">{{ item.placement }}</span>
+                <a v-if="item.video_url" :href="item.video_url" target="_blank" rel="noopener">{{ item.name }}</a>
+                <span v-else class="pdetails-lvl-name">{{ item.name }}</span>
+                <small v-if="item.percent">{{ item.percent }}%</small>
+              </li>
+            </ol>
+          </section>
+        </template>
+        <p v-else class="pdetails-levels-state">{{ lang === 'en' ? 'No completed levels on Demonlist.' : 'На Demonlist нет пройденных уровней.' }}</p>
       </div>
-      <a v-if="player.gdlId" :href="`https://demonlist.org/profile/${player.gdlId}`" class="primary-button pdetails-open" target="_blank" rel="noopener">{{ lang === 'en' ? 'Open on Demonlist' : 'Открыть на Demonlist' }}</a>
     </section>
   </div>
 </template>
