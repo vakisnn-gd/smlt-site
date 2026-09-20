@@ -9,7 +9,7 @@ export const countries = {
 
 export function flagSrc(code, size = 40) {
   const c = String(code || '').toUpperCase()
-  if (c === 'OTHER') return ''
+  if (c === 'OTHER' || !countries[c]) return `https://flagcdn.com/w${size}/un.png`
   const iso = countries[c] ? c.toLowerCase() : ''
   return iso ? `https://flagcdn.com/w${size}/${iso}.png` : ''
 }
