@@ -160,7 +160,7 @@ onMounted(() => {
       <AboutView v-else :lang="lang" :is-admin="isAdmin" @leaderboard="navigate('leaderboard')" @events="navigate('events')" @login="showLogin = true" @logout="logout" />
     </main>
     <transition name="toast"><div v-if="notice" class="toast" @click="notice = ''">{{ notice }}</div></transition>
-    <div v-if="showEasterEgg" class="easter-backdrop" @click.self="showEasterEgg = false">
+    <div v-if="showEasterEgg" class="easter-backdrop">
       <section class="easter-card" role="dialog" aria-modal="true" :aria-label="lang === 'en' ? 'SMLT easter egg' : 'Пасхалка SMLT'">
         <button class="modal-close" :aria-label="lang === 'en' ? 'Close' : 'Закрыть'" @click="showEasterEgg = false">×</button>
         <div class="easter-mark" aria-hidden="true">⚡</div>
