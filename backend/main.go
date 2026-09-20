@@ -53,6 +53,10 @@ func main() {
 				fs.ServeHTTP(w, r)
 				return
 			}
+			if r.URL.Path != "/events" && r.URL.Path != "/about" {
+				http.NotFound(w, r)
+				return
+			}
 		}
 		http.ServeFile(w, r, filepath.Join(frontendDir, "index.html"))
 	})
