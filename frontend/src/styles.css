@@ -400,6 +400,15 @@ html[data-style="rough"] .table-header,
 html[data-style="rough"] .section-kicker strong { color: #fff; }
 
 html[data-style="rough"] .site-header { background: #000; border-bottom: 2px solid #fff; }
+html[data-style="rough"] .brand-favicon {
+  width: 46px;
+  height: 46px;
+  border: 2px solid #fff;
+  border-radius: 12px 8px 13px 9px;
+  object-fit: cover;
+  transform: rotate(-2deg);
+  box-shadow: 3px 3px 0 rgba(255,255,255,.22);
+}
 html[data-style="rough"] .brand strong,
 html[data-style="rough"] .page-heading h1,
 html[data-style="rough"] .events-heading h1,
