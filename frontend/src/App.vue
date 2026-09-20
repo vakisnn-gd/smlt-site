@@ -165,7 +165,6 @@ onMounted(() => {
         <button class="modal-close" :aria-label="lang === 'en' ? 'Close' : 'Закрыть'" @click="showEasterEgg = false">×</button>
         <div class="easter-mark" aria-hidden="true">⚡</div>
         <p class="eyebrow">{{ lang === 'en' ? 'SMLT SECRET MODE' : 'СЕКРЕТНЫЙ РЕЖИМ SMLT' }}</p>
-        <h2>{{ lang === 'en' ? 'YOU ARE THE SMLT ADMIN' : 'ВЫ АДМИН SMLT' }}</h2>
         <p>{{ lang === 'en' ? 'Just kidding… or are you?' : 'Шутка… наверное :)' }}</p>
         <p class="easter-hint">{{ lang === 'en' ? 'It stays open until you close it. Trigger: five quick clicks on the SMLT logo.' : 'Окно не исчезает само. Пасхалка открывается после пяти быстрых нажатий на логотип SMLT.' }}</p>
         <button class="primary-button" @click="showEasterEgg = false">{{ lang === 'en' ? 'I knew it' : 'Я так и знал' }}</button>
