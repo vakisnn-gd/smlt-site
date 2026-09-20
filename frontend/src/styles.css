@@ -480,7 +480,6 @@ html[data-style="rough"] .style-toggle:hover { background: #d7d7d7; }
 .easter-card { border-width: 2px; border-color: #ff716b; box-shadow: 7px 7px 0 rgba(255,113,107,.22), 0 28px 100px rgba(0,0,0,.7); animation: easter-shake .42s ease-out, pop-in .22s ease-out; }
 .easter-mark { width: 72px; height: 72px; display: grid; place-items: center; margin: 0 auto 14px; border: 2px solid #ff716b; border-radius: 50%; color: #ff716b; background: rgba(255,113,107,.08); font-size: 38px; }
 .easter-card p:not(.eyebrow) { margin: 0 0 24px; color: var(--muted); }
-.easter-card .easter-hint { margin: -10px 0 24px; color: var(--quiet); font-size: 12px; line-height: 1.5; }
 @keyframes pop-in { from { opacity: 0; transform: scale(.94) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 @keyframes easter-shake { 0%, 100% { transform: translateX(0) rotate(0); } 20% { transform: translateX(-5px) rotate(-1deg); } 40% { transform: translateX(5px) rotate(1deg); } 60% { transform: translateX(-3px) rotate(-.5deg); } 80% { transform: translateX(3px) rotate(.5deg); } }
 @media (prefers-reduced-motion: reduce) {
