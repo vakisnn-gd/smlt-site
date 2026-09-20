@@ -9,6 +9,8 @@ defineEmits(['edit', 'delete', 'retry'])
 const search = ref('')
 const selected = ref(null)
 const country = ref('ALL')
+const spinPlayer = ref(null)
+const spinRolling = ref(false)
 
 const sorted = computed(() => [...(props.players || [])].sort((a, b) => Number(b.points) - Number(a.points) || a.name.localeCompare(b.name)))
 const visible = computed(() => sorted.value.filter(player => {
@@ -23,6 +25,18 @@ const countryStats = computed(() => {
   for (const player of sorted.value) counts.set(player.country, (counts.get(player.country) || 0) + 1)
   return [...counts.entries()].sort((a, b) => (a[0] === 'OTHER') - (b[0] === 'OTHER') || b[1] - a[1])
 })
+
+function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)) }
+
+async function spinSMLT() {
+  if (!sorted.value.length || spinRolling.value) return
+  spinRolling.value = true
+  for (let i = 0; i < 12; i += 1) {
+    spinPlayer.value = sorted.value[Math.floor(Math.random() * sorted.value.length)]
+    await wait(55 + i * 9)
+  }
+  spinRolling.value = false
+}
 </script>
 
 <template>
@@ -31,7 +45,7 @@ const countryStats = computed(() => {
       <div class="leaderboard-col">
         <section class="leaderboard-card">
           <div class="leaderboard-toolbar">
-            <div class="section-kicker"><strong>{{ lang === 'en' ? 'Top players' : 'Топ игроков' }}</strong></div>
+            <div class="section-kicker"><strong>{{ lang === 'en' ? 'Top players' : 'Топ игроков' }}</strong><button class="spin-button" :disabled="spinRolling || !sorted.length" @click="spinSMLT"><span aria-hidden="true">🎲</span>{{ spinRolling ? (lang === 'en' ? 'Rolling…' : 'Крутим…') : (lang === 'en' ? 'Spin SMLT' : 'Крутить SMLT') }}</button></div>
             <div class="filters">
               <label class="search-box"><span>⌕</span><input v-model="search" type="search" autocomplete="off" :placeholder="lang === 'en' ? 'Search player…' : 'Поиск игрока…'"></label>
               <label class="select-box"><span class="sr-only">{{ lang === 'en' ? 'Country' : 'Страна' }}</span><select v-model="country"><option value="ALL">{{ lang === 'en' ? 'All countries' : 'Все страны' }}</option><option v-for="code in countries" :key="code" :value="code">{{ countryMeta(code, lang).name }}</option></select></label>
@@ -73,5 +87,16 @@ const countryStats = computed(() => {
     </div>
 
     <PlayerDetailsView v-if="selected" :player="selected" :players="sorted" :lang="lang" @close="selected = null" />
+    <div v-if="spinPlayer" class="spin-backdrop" @click.self="spinPlayer = null">
+      <section class="spin-card" role="dialog" aria-modal="true" :aria-label="lang === 'en' ? 'SMLT random player' : 'Случайный игрок SMLT'">
+        <button class="modal-close" :aria-label="lang === 'en' ? 'Close' : 'Закрыть'" @click="spinPlayer = null">×</button>
+        <p class="eyebrow">SMLT RANDOMIZER</p>
+        <div class="spin-die" aria-hidden="true">{{ spinRolling ? '🎲' : '✦' }}</div>
+        <h2>{{ spinPlayer.name }}</h2>
+        <p class="spin-country"><img v-if="countryMeta(spinPlayer.country, lang).flagSrc" class="flag" :src="countryMeta(spinPlayer.country, lang).flagSrc" alt=""><span v-else>{{ countryMeta(spinPlayer.country, lang).flag }}</span>{{ countryMeta(spinPlayer.country, lang).name }}</p>
+        <p class="spin-points">{{ Number(spinPlayer.points).toFixed(2) }} {{ lang === 'en' ? 'points' : 'очков' }} · #{{ spinPlayer.rank }}</p>
+        <button class="primary-button" :disabled="spinRolling" @click="spinSMLT">{{ spinRolling ? (lang === 'en' ? 'Rolling…' : 'Крутим…') : (lang === 'en' ? 'Again' : 'Ещё раз') }}</button>
+      </section>
+    </div>
   </div>
 </template>

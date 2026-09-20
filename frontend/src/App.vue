@@ -22,6 +22,7 @@ const showLogin = ref(false)
 const editingPlayer = ref(null)
 const showPlayerModal = ref(false)
 const notice = ref('')
+const showEasterEgg = ref(false)
 
 function viewFromPath() {
   if (location.pathname === '/events') return 'events'
@@ -152,13 +153,23 @@ onMounted(() => {
 
 <template>
   <div class="app-shell">
-    <AppHeader :view="view" :lang="lang" :is-admin="isAdmin" :rough-mode="roughMode" @navigate="navigate" @language="toggleLanguage" @style="toggleStyle" @login="showLogin = true" @add="openAdd" @logout="logout" />
+    <AppHeader :view="view" :lang="lang" :is-admin="isAdmin" :rough-mode="roughMode" @navigate="navigate" @language="toggleLanguage" @style="toggleStyle" @easter-egg="showEasterEgg = true" @login="showLogin = true" @add="openAdd" @logout="logout" />
     <main>
       <LeaderboardView v-if="view === 'leaderboard'" :players="players" :changes="changes" :loading="loading" :error="error" :lang="lang" :is-admin="isAdmin" @edit="openEdit" @delete="removePlayer" @retry="loadData" />
       <EventsView v-else-if="view === 'events'" :lang="lang" :events="events" :is-admin="isAdmin" @changed="reloadEvents" />
       <AboutView v-else :lang="lang" :is-admin="isAdmin" @leaderboard="navigate('leaderboard')" @events="navigate('events')" @login="showLogin = true" @logout="logout" />
     </main>
     <transition name="toast"><div v-if="notice" class="toast" @click="notice = ''">{{ notice }}</div></transition>
+    <div v-if="showEasterEgg" class="easter-backdrop" @click.self="showEasterEgg = false">
+      <section class="easter-card" role="dialog" aria-modal="true" :aria-label="lang === 'en' ? 'SMLT easter egg' : 'Пасхалка SMLT'">
+        <button class="modal-close" :aria-label="lang === 'en' ? 'Close' : 'Закрыть'" @click="showEasterEgg = false">×</button>
+        <div class="easter-mark" aria-hidden="true">⚡</div>
+        <p class="eyebrow">SMLT SECRET MODE</p>
+        <h2>{{ lang === 'en' ? 'YOU ARE THE SMLT ADMIN' : 'ВЫ АДМИН SMLT' }}</h2>
+        <p>{{ lang === 'en' ? 'Just kidding… or are you?' : 'Шутка… наверное :)' }}</p>
+        <button class="primary-button" @click="showEasterEgg = false">{{ lang === 'en' ? 'I knew it' : 'Я так и знал' }}</button>
+      </section>
+    </div>
     <LoginModal v-if="showLogin" :lang="lang" @close="showLogin = false" @authenticated="showLogin = false; isAdmin = true" />
     <PlayerModal v-if="showPlayerModal" :lang="lang" :player="editingPlayer" @close="showPlayerModal = false" @saved="savedPlayer" @unauthorized="isAdmin = false" />
   </div>
