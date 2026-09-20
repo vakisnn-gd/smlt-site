@@ -14,6 +14,7 @@ const events = ref([])
 const loading = ref(true)
 const error = ref('')
 const lang = ref(localStorage.getItem('smlt-lang') === 'en' ? 'en' : 'ru')
+const roughMode = ref(localStorage.getItem('smlt-style') === 'rough')
 const isAdmin = ref(false)
 const showLogin = ref(false)
 const editingPlayer = ref(null)
@@ -26,6 +27,18 @@ function viewFromPath() {
   return 'leaderboard'
 }
 const view = ref(viewFromPath())
+
+function applyStyle() {
+  document.documentElement.dataset.style = roughMode.value ? 'rough' : 'classic'
+}
+
+applyStyle()
+
+function toggleStyle() {
+  roughMode.value = !roughMode.value
+  localStorage.setItem('smlt-style', roughMode.value ? 'rough' : 'classic')
+  applyStyle()
+}
 
 function updatePageMeta() {
   const titles = {
@@ -125,6 +138,7 @@ async function reloadEvents() {
 }
 
 onMounted(() => {
+  applyStyle()
   document.documentElement.lang = lang.value
   updatePageMeta()
   loadData()
@@ -135,7 +149,7 @@ onMounted(() => {
 
 <template>
   <div class="app-shell">
-    <AppHeader :view="view" :lang="lang" :is-admin="isAdmin" @navigate="navigate" @language="toggleLanguage" @login="showLogin = true" @add="openAdd" @logout="logout" />
+    <AppHeader :view="view" :lang="lang" :is-admin="isAdmin" :rough-mode="roughMode" @navigate="navigate" @language="toggleLanguage" @style="toggleStyle" @login="showLogin = true" @add="openAdd" @logout="logout" />
     <main>
       <LeaderboardView v-if="view === 'leaderboard'" :players="players" :changes="changes" :loading="loading" :error="error" :lang="lang" :is-admin="isAdmin" @edit="openEdit" @delete="removePlayer" @retry="loadData" />
       <EventsView v-else-if="view === 'events'" :lang="lang" :events="events" :is-admin="isAdmin" @changed="reloadEvents" />

@@ -1,8 +1,8 @@
 <script setup>
 import { ref } from 'vue'
 
-defineProps({view: String, lang: String, isAdmin: Boolean})
-const emit = defineEmits(['navigate', 'language', 'add', 'logout'])
+defineProps({view: String, lang: String, isAdmin: Boolean, roughMode: Boolean})
+const emit = defineEmits(['navigate', 'language', 'style', 'add', 'logout'])
 const menuOpen = ref(false)
 
 function go(view) {
@@ -22,6 +22,7 @@ function go(view) {
         <button :class="{active: view === 'about'}" @click="go('about')">{{ lang === 'en' ? 'About' : 'О SMLT' }}</button>
       </nav>
       <div class="nav-actions">
+        <button class="style-toggle" :class="{active: roughMode}" :aria-pressed="roughMode" :title="roughMode ? (lang === 'en' ? 'Switch to clean style' : 'Вернуть обычный стиль') : (lang === 'en' ? 'Turn on playful style' : 'Включить рофляный стиль')" @click="$emit('style')"><span aria-hidden="true">{{ roughMode ? '✎' : '✦' }}</span><span class="style-toggle-label">{{ roughMode ? (lang === 'en' ? 'Playful' : 'Рофл') : (lang === 'en' ? 'Clean' : 'Обычный') }}</span></button>
         <button class="lang-button" @click="$emit('language')">{{ lang === 'en' ? 'RU' : 'EN' }}</button>
         <template v-if="isAdmin">
           <button class="icon-button add-button" :title="lang === 'en' ? 'Add player' : 'Добавить игрока'" @click="$emit('add')">＋</button>
