@@ -19,9 +19,41 @@ watch(() => props.events, list => {
 }, {immediate: true})
 
 function videoUrl(event) { return `https://www.youtube-nocookie.com/embed/${event.videoId}?rel=0&modestbranding=1` }
+function extractYouTubeId(value) {
+  const raw = String(value || '').trim()
+  if (!raw) return ''
+  if (/^[A-Za-z0-9_-]{11}$/.test(raw)) return raw
+
+  let parsed
+  try {
+    parsed = new URL(/^[a-z][a-z\d+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`)
+  } catch {
+    return ''
+  }
+
+  const host = parsed.hostname.toLowerCase().replace(/^www\./, '')
+  let id = ''
+  if (host === 'youtu.be') {
+    id = parsed.pathname.split('/').filter(Boolean)[0] || ''
+  } else if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'music.youtube.com' || host === 'youtube-nocookie.com') {
+    if (parsed.pathname === '/watch') id = parsed.searchParams.get('v') || ''
+    else {
+      const parts = parsed.pathname.split('/').filter(Boolean)
+      if (['embed', 'shorts', 'live', 'v'].includes(parts[0])) id = parts[1] || ''
+    }
+  }
+  return /^[A-Za-z0-9_-]{11}$/.test(id) ? id : ''
+}
+
 async function addEvent() {
   saving.value = true; formError.value = ''
-  try { await api.addEvent(form.value); form.value = {videoId: '', title: '', category: 'beat'}; showForm.value = false; emit('changed') }
+  const videoId = extractYouTubeId(form.value.videoId)
+  if (!videoId) {
+    formError.value = props.lang === 'en' ? 'Paste a YouTube link or an 11-character video ID.' : 'Вставьте ссылку YouTube или 11-символьный ID видео.'
+    saving.value = false
+    return
+  }
+  try { await api.addEvent({...form.value, videoId}); form.value = {videoId: '', title: '', category: 'beat'}; showForm.value = false; emit('changed') }
   catch (err) { formError.value = err.message }
   finally { saving.value = false }
 }
@@ -45,7 +77,7 @@ async function move(event, direction) {
   <div class="page events-page">
     <header class="events-heading"><div><h1>{{ lang === 'en' ? 'Events and projects' : 'Ивенты и проекты' }}</h1><p>{{ lang === 'en' ? 'Completions and collaborations by SMLT.' : 'Совместные прохождения и коллабы SMLT.' }}</p></div><button v-if="isAdmin" class="secondary-button" @click="showForm = !showForm">{{ showForm ? '×' : '+' }} {{ lang === 'en' ? 'Manage events' : 'Управление' }}</button></header>
     <form v-if="showForm" class="event-admin" @submit.prevent="addEvent">
-      <input v-model="form.videoId" placeholder="YouTube ID" required maxlength="32">
+      <input v-model="form.videoId" :placeholder="lang === 'en' ? 'YouTube link or video ID' : 'Ссылка YouTube или ID видео'" required maxlength="200" autocomplete="off">
       <input v-model="form.title" :placeholder="lang === 'en' ? 'Title' : 'Название'" required maxlength="120">
       <select v-model="form.category"><option value="beat">SMLT Beats</option><option value="project">{{ lang === 'en' ? 'Projects and collabs' : 'Проекты и коллабы' }}</option></select>
       <button class="primary-button" :disabled="saving">{{ lang === 'en' ? 'Add' : 'Добавить' }}</button>

@@ -3,6 +3,7 @@ package main
 import (
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -25,6 +26,56 @@ func sanitizeInput(s string) string {
 		}
 		return r
 	}, s)
+}
+
+// normalizeYouTubeID accepts both a raw 11-character ID and the common
+// YouTube URL forms used when sharing a video. Events are stored only with the
+// canonical ID so the embed URL cannot become /embed/https://....
+func normalizeYouTubeID(value string) (string, bool) {
+	raw := strings.TrimSpace(value)
+	if isYouTubeID(raw) {
+		return raw, true
+	}
+
+	parseValue := raw
+	if !strings.Contains(parseValue, "://") {
+		parseValue = "https://" + parseValue
+	}
+	u, err := url.Parse(parseValue)
+	if err != nil {
+		return "", false
+	}
+	host := strings.ToLower(strings.TrimPrefix(u.Hostname(), "www."))
+	var id string
+	switch host {
+	case "youtu.be":
+		parts := strings.Split(strings.Trim(u.Path, "/"), "/")
+		if len(parts) > 0 {
+			id = parts[0]
+		}
+	case "youtube.com", "m.youtube.com", "music.youtube.com", "youtube-nocookie.com":
+		if u.Path == "/watch" {
+			id = u.Query().Get("v")
+		} else {
+			parts := strings.Split(strings.Trim(u.Path, "/"), "/")
+			if len(parts) >= 2 && (parts[0] == "embed" || parts[0] == "shorts" || parts[0] == "live" || parts[0] == "v") {
+				id = parts[1]
+			}
+		}
+	}
+	return id, isYouTubeID(id)
+}
+
+func isYouTubeID(value string) bool {
+	if len(value) != 11 {
+		return false
+	}
+	for _, r := range value {
+		if (r < 'a' || r > 'z') && (r < 'A' || r > 'Z') && (r < '0' || r > '9') && r != '_' && r != '-' {
+			return false
+		}
+	}
+	return true
 }
 
 // clientIP returns the real client IP.

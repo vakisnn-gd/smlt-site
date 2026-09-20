@@ -60,10 +60,12 @@ func handleAddEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req.VideoID, req.Title, req.Category = sanitizeInput(req.VideoID), sanitizeInput(req.Title), sanitizeInput(req.Category)
-	if len(req.VideoID) < 5 || len(req.VideoID) > 32 || len(req.Title) < 1 || len(req.Title) > 120 || (req.Category != "beat" && req.Category != "project") {
-		http.Error(w, `{"success":false,"message":"Проверьте ID видео, название и категорию"}`, http.StatusBadRequest)
+	videoID, validVideo := normalizeYouTubeID(req.VideoID)
+	if !validVideo || len(req.Title) < 1 || len(req.Title) > 120 || (req.Category != "beat" && req.Category != "project") {
+		http.Error(w, `{"success":false,"message":"Вставьте корректную ссылку YouTube или 11-символьный ID, название и категорию"}`, http.StatusBadRequest)
 		return
 	}
+	req.VideoID = videoID
 	if err := dbAddEvent(Event{VideoID: req.VideoID, Title: req.Title, Category: req.Category}); err != nil {
 		http.Error(w, `{"success":false,"message":"Ошибка базы данных"}`, http.StatusInternalServerError)
 		return
