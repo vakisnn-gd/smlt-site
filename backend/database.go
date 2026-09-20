@@ -138,10 +138,41 @@ func initDB() {
 		seedPlayers()
 	}
 	seedEventsIfEmpty()
+	normalizeStoredEventVideoIDs()
 	db.Exec(`INSERT INTO player_history (player_id, points, global_rank)
 		SELECT p.id, p.points, p.global_rank FROM players p
 		WHERE NOT EXISTS (SELECT 1 FROM player_history h WHERE h.player_id = p.id)`)
 	log.Printf("[DB] Connected, %d players", count)
+}
+
+// normalizeStoredEventVideoIDs repairs events created before the API accepted
+// full YouTube links. The migration is intentionally conservative: only URLs
+// that normalize to a valid YouTube ID are changed; invalid records are left
+// visible for an administrator to review.
+func normalizeStoredEventVideoIDs() {
+	rows, err := db.Query("SELECT id, video_id FROM events")
+	if err != nil {
+		log.Printf("[DB] WARN could not inspect event video IDs: %v", err)
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int
+		var stored string
+		if err := rows.Scan(&id, &stored); err != nil {
+			log.Printf("[DB] WARN could not read event video ID: %v", err)
+			continue
+		}
+		normalized, valid := normalizeYouTubeID(stored)
+		if !valid || normalized == stored {
+			continue
+		}
+		if _, err := db.Exec("UPDATE events SET video_id=$1 WHERE id=$2", normalized, id); err != nil {
+			log.Printf("[DB] WARN could not normalize event %d video ID: %v", id, err)
+			continue
+		}
+		log.Printf("[DB] Normalized event %d video ID", id)
+	}
 }
 
 func dbGetEvents() ([]Event, error) {
