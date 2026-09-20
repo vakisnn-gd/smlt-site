@@ -395,27 +395,3 @@ func handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{"status": status})
 }
-
-func handlePublicPlayer(w http.ResponseWriter, r *http.Request) {
-	name, _ := url.PathUnescape(strings.TrimPrefix(r.URL.Path, "/api/profile/"))
-	player, err := dbGetPlayer(sanitizeInput(name))
-	w.Header().Set("Content-Type", "application/json")
-	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Игрок не найден"})
-		return
-	}
-	json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "player": player})
-}
-
-func handlePlayerHistory(w http.ResponseWriter, r *http.Request) {
-	name, _ := url.PathUnescape(strings.TrimPrefix(r.URL.Path, "/api/history/"))
-	points, err := dbGetHistory(sanitizeInput(name))
-	w.Header().Set("Content-Type", "application/json")
-	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(map[string]interface{}{"success": false})
-		return
-	}
-	json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "history": points})
-}
