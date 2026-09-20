@@ -1,27 +1,34 @@
+@import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@600;700&family=Nunito:wght@400;600;700;800;900&display=swap');
 :root {
   color-scheme: dark;
-  --bg: #0b0d10;
-  --surface: #12151a;
-  --surface-2: #171b21;
-  --surface-3: #1c2128;
-  --line: #262c35;
-  --line-bright: #343d49;
+  --bg: #000000;
+  --surface: #000000;
+  --line: rgba(255,255,255,.28);
+  --line-bright: #ffffff;
   --text: #edf2f8;
-  --muted: #8993a1;
-  --quiet: #596371;
-  --blue: #4d9fff;
-  --blue-soft: #183451;
-  --green: #36d391;
-  --red: #ff716b;
-  --radius: 18px;
-  --shadow: 0 24px 70px rgba(0,0,0,.28);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --muted: #9aa3ad;
+  --blue: #7cc0ff;
+  --blue-deep: #4f8fff;
+  --green: #4ade80;
+  --red: #f87171;
+  --yellow: #facc15;
+  --magenta: #f472b6;
+  --cyan: #22d3ee;
+  --purple: #a78bfa;
+  --orange: #fb923c;
+  --radius: 10px;
+  --shadow: 0 6px 0 rgba(0,0,0,.5);
+  --stamp: 4px;
+  --h-font: "Comfortaa", "Nunito", ui-rounded, sans-serif;
+  --marker: 0 0 0 1px rgba(255,255,255,.2), -3px 4px 0 rgba(255,255,255,.1);
+  --rough: 22px 9px 27px 9px / 13px 27px 13px 29px;
+  font-family: "Nunito", system-ui, Roboto, "Segoe UI", sans-serif;
   font-synthesis: none;
 }
 
 * { box-sizing: border-box; }
 html { min-width: 320px; background: var(--bg); scroll-behavior: smooth; }
-body { margin: 0; min-width: 320px; min-height: 100vh; color: var(--text); background: radial-gradient(900px 480px at 50% -250px, rgba(59,130,246,.14), transparent), var(--bg); }
+body { margin: 0; min-width: 320px; min-height: 100vh; color: var(--text); background: radial-gradient(900px 480px at 50% -250px, rgba(96,165,255,.16), transparent), var(--bg); }
 button, input, select { font: inherit; }
 button { color: inherit; }
 a { color: inherit; }
@@ -364,4 +371,193 @@ img.flag { width: 26px; height: 18px; border-radius: 3px; object-fit: cover; box
   .community-links { grid-template-columns: 1fr; gap: 12px; }
   .community-info { padding: 24px 20px; }
   .community-admin-access { align-items: stretch; flex-direction: column; }
+}
+
+/* ============================================================
+   PAINT MODE: всё нарисовано фломастером на плотной бумаге.
+   Статичные рамки и заголовки — "от руки"; живые картинки/флаги
+   оставлены как есть (их рисует автор), мы их не трогаем.
+   ============================================================ */
+html, body { margin: 0; background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.023) 0 2px, transparent 2px 3px),
+    var(--bg); }
+
+h1, h2, h3, h4, .brand strong, .section-kicker strong,
+.panel-title h2, .events-heading h1, .community-intro h1,
+.page-heading h1, .about-hero h1, .section-head h2,
+.community-info h2, .modal h2, .events-heading h2 {
+  font-family: var(--h-font, "Caveat", "Comic Sans MS");
+  font-weight: 700;
+  letter-spacing: .01em;
+}
+.page-heading h1, .about-hero h1, .community-intro h1, .events-heading h1 { transform: rotate(-.6deg); }
+.section-head h2 { transform: rotate(.4deg) translateX(2px); }
+
+/* Бумажные панели: рваные края + наклейка-заголовок */
+.leaderboard-card, .panel, .page-heading, .community-info,
+.community-links button, .contacts-panel, .about-grid article,
+.pdetails-stat, .video-card {
+  border: 2px solid var(--line-bright);
+  border-radius: var(--rough, 18px);
+  box-shadow: var(--marker, 0 4px 0 rgba(0,0,0,.45));
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.03), rgba(255,255,255,0) 40%),
+    var(--surface);
+}
+
+.leaderboard-card, .panel, .page-heading { position: relative; }
+.leaderboard-card::before, .panel::before {
+  content: '✂';
+  position: absolute; top: 8px; right: 10px; z-index: 2;
+  color: var(--orange); font-size: 15px; transform: rotate(12deg);
+  opacity: .55; pointer-events: none;
+}
+
+/* Заклеенный скотчем секционный заголовок */
+.section-kicker > span {
+  padding: 4px 11px; border: 1px solid transparent;
+  color: #222; font-family: var(--h-font, Caveat);
+  font-size: 18px; font-weight: 700; line-height: 1;
+  background: rgba(250,204,21,.82); transform: rotate(-2deg);
+  box-shadow: 0 2px 0 rgba(0,0,0,.35);
+}
+.section-kicker strong { font-size: 19px; }
+
+/* Кнопки-кнопки: жирный фломастер поверх */
+.primary-button {
+  color: #101318; font-weight: 900;
+  background: var(--blue); border-radius: 12px 13px 10px 14px;
+  box-shadow: var(--marker);
+  transform: rotate(-.7deg);
+}
+.primary-button:hover { transform: rotate(-.7deg) translateY(1px); box-shadow: 0 2px 0 rgba(0,0,0,.4); }
+.secondary-button, .social-link, .lang-button, .icon-button {
+  border-radius: 10px 12px 13px 11px;
+}
+.secondary-button { border-width: 2px; background: transparent; }
+
+/* Поиск: лист с полями */
+.search-box, .select-box select,
+.modal input, .modal select, .event-admin input, .event-admin select {
+  border-radius: 10px 12px 9px 12px;
+}
+.search-box { border-width: 2px; background: #10141a; }
+.search-box input { font-family: "Zain", "Comic Sans MS", sans-serif; }
+
+/* Строки таблицы: подчёркнуто фломастером */
+.table-header {
+  border-bottom: 3px solid var(--line-bright);
+  font-family: var(--h-font, Caveat);
+  font-size: 15px; font-weight: 700; letter-spacing: .05em; text-transform: none;
+}
+.player-row { border-bottom: 1px dashed rgba(255,255,255,.14); }
+.player-row:hover { background: rgba(96,165,255,.06); }
+.player-cell .player-name-button { text-decoration-thickness: 4px; }
+.rank { font-weight: 900; }
+.top-three .rank, .stat.accent strong { color: var(--yellow); text-shadow: 0 0 0 transparent; }
+
+/* Флаги: наклеенные картинки под наклоном */
+img.flag, .pdetails-flag img { border-radius: 3px; transform: rotate(-1.2deg); }
+img.flag { border: 1px solid rgba(255,255,255,.2); box-shadow: var(--marker); border-radius: 4px; }
+
+/* Дата/разделители пишем от руки */
+.change-date, .date-divider, .pdetails-stat small,
+.stat small, .result-count, .section-kicker small {
+  font-family: var(--h-font, Caveat); letter-spacing: .03em;
+}
+.date-divider { font-size: 13px; letter-spacing: .05em; }
+.change-row .change-date { font-size: 13px; font-weight: 600; }
+
+/* Небольшие волнистые овалы вокруг статистики */
+.stat { border-radius: 0; border-left-color: var(--line-bright); }
+.pdetails-demon { border-style: dashed; border-radius: 12px; }
+
+/* Модалка: тоже на листочке */
+.modal { border-radius: 16px 19px 15px 20px; border-width: 2px; }
+.modal h2 { transform: rotate(-.5deg); }
+
+/* Инпут-фокус "обведён фломастером" */
+.search-box:focus-within { box-shadow: 0 0 0 0 transparent; border-color: var(--yellow); }
+.modal input:focus, .modal select:focus { border-color: var(--yellow); box-shadow: 0 0 0 3px rgba(250,204,21,.12); }
+
+/* ============================================================
+   FULL BLACK: всё на чёрной бумаге, рамки белым фломастером,
+   заливки тоже чёрные. Жёсткие серые hex перекрываются тут.
+   ============================================================ */
+body {
+  background: #000 !important;
+  color: var(--text);
+}
+.noise-layer, .bg-tint { background: #000 !important; }
+
+/* Все поверхности — чёрные, без серых подложек */
+.surface, .leaderboard-card, .panel, .page-heading, .community-info,
+.community-links button, .contacts-panel, .about-grid article,
+.pdetails-stat, .video-card, .stat, .extras-card, .section-card,
+.video-tabs button, .social-link, .lang-button, .icon-button,
+.primary-button, .secondary-button, .block, .wrap,
+.search-box, .select-box select, .modal, .country-list button,
+.video-tabs button.active, .modal input, .modal select,
+.event-admin input, .event-admin select, .ad-card, .feature-card {
+  background: #000 !important;
+  border-color: rgba(255,255,255,.4) !important;
+}
+.surface { border-color: #fff !important; }
+
+/* Рамки белые жёстче */
+.leaderboard-card, .panel, .page-heading, .community-info,
+.community-links button, .contacts-panel, .about-grid article,
+.pdetails-stat, .video-card, .stat, .search-box {
+  box-shadow: none !important;
+  border: 2px solid #fff !important;
+  border-radius: var(--rough) !important;
+}
+
+/* ============================================================
+   БОЛЬШЕ ЛОМАНЫХ ЛИНИЙ: панели/списки с рваными краями.
+   ============================================================ */
+.leaderboard-card, .panel, .page-heading,
+.community-info, .contacts-panel, .about-grid article,
+.pdetails-stat, .video-card, .modal {
+  border-radius: var(--rough) !important;
+  border: 2px solid #fff !important;
+}
+
+/* Список игроков — края тоже рисованные, а не прямые */
+.player-list { border-radius: var(--rough) !important; }
+.player-row {
+  border-bottom: 2px dashed rgba(255,255,255,.35) !important;
+  border-left: 0 !important; border-right: 0 !important;
+}
+.table-header, .leaderboard-stats { border-bottom-color: #fff !important; }
+.change-row { border-bottom-color: rgba(255,255,255,.18) !important; }
+
+/* Секционные шапки с ломаной линией */
+.section-head, .events-heading, .community-intro,
+.about-hero, .community-links, .google-form, .video-card,
+.panel-title, .page-heading {
+  border-radius: var(--rough) !important;
+}
+.section-head h2, .page-heading h1, .events-heading h1,
+.community-intro h1, .about-hero h1 { color: #fff !important; }
+.section-head {
+  border-bottom: 2px solid #fff !important;
+  transform: rotate(-.4deg);
+}
+
+/* Дырка-наклейка сверху у панелей — уже есть, рамка по ним белая */
+.date-divider::before, .date-divider::after,
+.section-head::before, .section-head::after { border-color: rgba(255,255,255,.3) !important; }
+
+/* Шрифт чище (не рукописный): ключевые надписи */
+.brand strong, .section-head h2, .page-heading h1, .events-heading h1,
+.community-intro h1, .about-hero h1, .panel-title h2,
+.table-header, .stat strong, .result-count {
+  font-family: "Nunito", "Comfortaa", system-ui, sans-serif !important;
+  font-weight: 800;
+}
+.brand strong { letter-spacing: .02em; }
+.stat small, .section-kicker, .eyebrow {
+  font-family: "Nunito", system-ui, sans-serif !important;
+  letter-spacing: .05em;
 }

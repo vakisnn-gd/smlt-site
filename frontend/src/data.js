@@ -7,18 +7,13 @@ export const countries = {
   CA: ['🇨🇦', 'Канада', 'Canada'], BR: ['🇧🇷', 'Бразилия', 'Brazil'], OTHER: ['🌐', 'Другое', 'Other'],
 }
 
-// Community-provided flags are kept locally so Discord CDN links cannot expire.
-const localFlagFiles = {
-  RU: 'rus.png', BY: 'by.png', DE: 'de.png', AM: 'am.png', RS: 'rs.png',
-  UA: 'ua.png', BG: 'bg.png', KZ: 'kz.png', OTHER: 'none.png',
-}
-
-export function flagSrc(code, size = 40) {
+export function flagSrc(code, _size = 40) {
   const c = String(code || '').toUpperCase()
-  if (localFlagFiles[c]) return `/flags/${localFlagFiles[c]}`
-  if (c === 'OTHER') return ''
+  const paintFlags = { RU: 'rus', UA: 'ua', BY: 'by', RS: 'rs', AM: 'am', BG: 'bg', DE: 'de', KZ: 'kz', OTHER: 'none' }
+  const local = paintFlags[c]
+  if (local) return `/flags/${local}.png`
   const iso = countries[c] ? c.toLowerCase() : ''
-  return iso ? `https://flagcdn.com/w${size}/${iso}.png` : ''
+  return iso ? `https://flagcdn.com/w40/${iso}.png` : ''
 }
 
 export function countryMeta(code, lang = 'ru') {
