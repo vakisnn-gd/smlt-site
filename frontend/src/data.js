@@ -7,13 +7,11 @@ export const countries = {
   CA: ['🇨🇦', 'Канада', 'Canada'], BR: ['🇧🇷', 'Бразилия', 'Brazil'], OTHER: ['🌐', 'Другое', 'Other'],
 }
 
-export function flagSrc(code, _size = 40) {
+export function flagSrc(code, size = 40) {
   const c = String(code || '').toUpperCase()
-  const paintFlags = { RU: 'rus', UA: 'ua', BY: 'by', RS: 'rs', AM: 'am', BG: 'bg', DE: 'de', KZ: 'kz', OTHER: 'none' }
-  const local = paintFlags[c]
-  if (local) return `/flags/${local}.png`
+  if (c === 'OTHER') return ''
   const iso = countries[c] ? c.toLowerCase() : ''
-  return iso ? `https://flagcdn.com/w40/${iso}.png` : ''
+  return iso ? `https://flagcdn.com/w${size}/${iso}.png` : ''
 }
 
 export function countryMeta(code, lang = 'ru') {
