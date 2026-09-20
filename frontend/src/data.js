@@ -7,9 +7,16 @@ export const countries = {
   CA: ['🇨🇦', 'Канада', 'Canada'], BR: ['🇧🇷', 'Бразилия', 'Brazil'], OTHER: ['🌐', 'Другое', 'Other'],
 }
 
+export function flagSrc(code, size = 40) {
+  const c = String(code || '').toUpperCase()
+  if (c === 'OTHER') return ''
+  const iso = countries[c] ? c.toLowerCase() : ''
+  return iso ? `https://flagcdn.com/w${size}/${iso}.png` : ''
+}
+
 export function countryMeta(code, lang = 'ru') {
   const entry = countries[String(code || '').toUpperCase()] || [String(code || '🌐'), String(code || 'Другое'), String(code || 'Other')]
-  return {flag: entry[0], name: entry[lang === 'en' ? 2 : 1]}
+  return {flag: entry[0], flagSrc: flagSrc(code), name: entry[lang === 'en' ? 2 : 1]}
 }
 
 export const eventVideos = [

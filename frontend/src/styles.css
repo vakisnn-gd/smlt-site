@@ -75,6 +75,7 @@ a { color: inherit; }
 .rank { color: #778291; font-weight: 700; }
 .top-three .rank { color: var(--blue); }
 .flag { font-size: 19px; }
+img.flag { width: 26px; height: 18px; border-radius: 3px; object-fit: cover; box-shadow: 0 1px 3px rgba(0,0,0,.35); }
 .player-cell { min-width: 0; }
 .player-cell a, .player-cell strong { display: block; overflow: hidden; color: #ebf0f6; font-weight: 650; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
 .player-cell a:hover { color: var(--blue); }
