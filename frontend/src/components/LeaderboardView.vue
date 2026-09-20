@@ -34,7 +34,7 @@ const countryStats = computed(() => {
             <div class="section-kicker"><strong>{{ lang === 'en' ? 'Top players' : 'Топ игроков' }}</strong></div>
             <div class="filters">
               <label class="search-box"><span>⌕</span><input v-model="search" type="search" autocomplete="off" :placeholder="lang === 'en' ? 'Search player…' : 'Поиск игрока…'"></label>
-              <label class="select-box"><span class="sr-only">{{ lang === 'en' ? 'Country' : 'Страна' }}</span><select v-model="country"><option value="ALL">{{ lang === 'en' ? 'All countries' : 'Все страны' }}</option><option v-for="code in countries" :key="code" :value="code">{{ countryMeta(code, lang).flag }} {{ countryMeta(code, lang).name }}</option></select></label>
+              <label class="select-box"><span class="sr-only">{{ lang === 'en' ? 'Country' : 'Страна' }}</span><select v-model="country"><option value="ALL">{{ lang === 'en' ? 'All countries' : 'Все страны' }}</option><option v-for="code in countries" :key="code" :value="code">{{ countryMeta(code, lang).name }}</option></select></label>
             </div>
           </div>
 
@@ -51,7 +51,7 @@ const countryStats = computed(() => {
             <div class="player-list">
               <article v-for="player in visible" :key="player.id" :class="['player-row', {'top-three': player.rank <= 3}]">
                 <span class="rank">{{ player.rank }}</span>
-                <span class="flag" :title="countryMeta(player.country, lang).name">{{ countryMeta(player.country, lang).flag }}</span>
+                <img v-if="countryMeta(player.country, lang).flagSrc" class="flag" :src="countryMeta(player.country, lang).flagSrc" :alt="countryMeta(player.country, lang).name" :title="countryMeta(player.country, lang).name"><span v-else class="flag" :title="countryMeta(player.country, lang).name">{{ countryMeta(player.country, lang).flag }}</span>
                 <div class="player-cell"><button class="player-name-button" @click.stop="selected = player">{{ player.name }}</button><small class="mobile-demon">{{ player.demon }}</small></div>
                 <strong class="points">{{ Number(player.points).toFixed(2) }}</strong>
                 <span class="demon">{{ player.demon || '—' }}</span>
@@ -68,7 +68,7 @@ const countryStats = computed(() => {
 
       <aside class="panel countries-sidebar">
         <div class="panel-title"><h2>{{ lang === 'en' ? 'Players by country' : 'Игроки по странам' }}</h2></div>
-        <div class="country-list"><button v-for="([code, count]) in countryStats" :key="code" @click="country = code"><span>{{ countryMeta(code, lang).flag }}</span><span>{{ countryMeta(code, lang).name }}</span><strong>{{ count }}</strong></button></div>
+        <div class="country-list"><button v-for="([code, count]) in countryStats" :key="code" @click="country = code"><img v-if="countryMeta(code, lang).flagSrc" class="flag" :src="countryMeta(code, lang).flagSrc" :alt="countryMeta(code, lang).name"><span v-else>{{ countryMeta(code, lang).flag }}</span><span>{{ countryMeta(code, lang).name }}</span><strong>{{ count }}</strong></button></div>
       </aside>
     </div>
 

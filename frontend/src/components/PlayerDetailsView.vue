@@ -89,7 +89,7 @@ onBeforeUnmount(() => {
     <section class="modal player-details-modal" role="dialog" aria-modal="true">
       <button class="modal-close" @click="$emit('close')">×</button>
       <div class="pdetails-hero">
-        <span class="pdetails-flag">{{ countryMeta(player.country, lang).flag }}</span>
+        <img v-if="countryMeta(player.country, lang).flagSrc" class="pdetails-flag" :src="countryMeta(player.country, lang).flagSrc" :alt="countryMeta(player.country, lang).name"><span v-else class="pdetails-flag">{{ countryMeta(player.country, lang).flag }}</span>
         <div>
           <p class="eyebrow">SMLT PLAYER</p>
           <h2 class="pdetails-name">{{ player.name }}</h2>
