@@ -1,14 +1,14 @@
-@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Comic+Neue:ital,wght@0,400;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@600;700&family=Nunito:wght@400;600;700;800;900&display=swap');
 :root {
   color-scheme: dark;
-  --bg: #0b0d10;
-  --surface: #15181d;
-  --line: #262c35;
-  --line-bright: #3c4754;
+  --bg: #000000;
+  --surface: #000000;
+  --line: rgba(255,255,255,.28);
+  --line-bright: #ffffff;
   --text: #edf2f8;
-  --muted: #8993a1;
-  --blue: #60a5ff;
-  --blue-deep: #2563eb;
+  --muted: #9aa3ad;
+  --blue: #7cc0ff;
+  --blue-deep: #4f8fff;
   --green: #4ade80;
   --red: #f87171;
   --yellow: #facc15;
@@ -19,10 +19,10 @@
   --radius: 10px;
   --shadow: 0 6px 0 rgba(0,0,0,.5);
   --stamp: 4px;
-  --h-font: "Caveat", "Segoe Print", "Comic Sans MS", "Comic Sans", "Zain", ui-rounded, sans-serif;
-  --marker: 0 0 0 1px rgba(255,255,255,.09), -3px 4px 0 rgba(0,0,0,.6);
+  --h-font: "Comfortaa", "Nunito", ui-rounded, sans-serif;
+  --marker: 0 0 0 1px rgba(255,255,255,.2), -3px 4px 0 rgba(255,255,255,.1);
   --rough: 22px 9px 27px 9px / 13px 27px 13px 29px;
-  font-family: "Zain", "Comic Sans MS", ui-rounded, system-ui, Roboto, "Segoe UI", sans-serif;
+  font-family: "Nunito", system-ui, Roboto, "Segoe UI", sans-serif;
   font-synthesis: none;
 }
 
@@ -479,3 +479,85 @@ img.flag { border: 1px solid rgba(255,255,255,.2); box-shadow: var(--marker); bo
 /* Инпут-фокус "обведён фломастером" */
 .search-box:focus-within { box-shadow: 0 0 0 0 transparent; border-color: var(--yellow); }
 .modal input:focus, .modal select:focus { border-color: var(--yellow); box-shadow: 0 0 0 3px rgba(250,204,21,.12); }
+
+/* ============================================================
+   FULL BLACK: всё на чёрной бумаге, рамки белым фломастером,
+   заливки тоже чёрные. Жёсткие серые hex перекрываются тут.
+   ============================================================ */
+body {
+  background: #000 !important;
+  color: var(--text);
+}
+.noise-layer, .bg-tint { background: #000 !important; }
+
+/* Все поверхности — чёрные, без серых подложек */
+.surface, .leaderboard-card, .panel, .page-heading, .community-info,
+.community-links button, .contacts-panel, .about-grid article,
+.pdetails-stat, .video-card, .stat, .extras-card, .section-card,
+.video-tabs button, .social-link, .lang-button, .icon-button,
+.primary-button, .secondary-button, .block, .wrap,
+.search-box, .select-box select, .modal, .country-list button,
+.video-tabs button.active, .modal input, .modal select,
+.event-admin input, .event-admin select, .ad-card, .feature-card {
+  background: #000 !important;
+  border-color: rgba(255,255,255,.4) !important;
+}
+.surface { border-color: #fff !important; }
+
+/* Рамки белые жёстче */
+.leaderboard-card, .panel, .page-heading, .community-info,
+.community-links button, .contacts-panel, .about-grid article,
+.pdetails-stat, .video-card, .stat, .search-box {
+  box-shadow: none !important;
+  border: 2px solid #fff !important;
+  border-radius: var(--rough) !important;
+}
+
+/* ============================================================
+   БОЛЬШЕ ЛОМАНЫХ ЛИНИЙ: панели/списки с рваными краями.
+   ============================================================ */
+.leaderboard-card, .panel, .page-heading,
+.community-info, .contacts-panel, .about-grid article,
+.pdetails-stat, .video-card, .modal {
+  border-radius: var(--rough) !important;
+  border: 2px solid #fff !important;
+}
+
+/* Список игроков — края тоже рисованные, а не прямые */
+.player-list { border-radius: var(--rough) !important; }
+.player-row {
+  border-bottom: 2px dashed rgba(255,255,255,.35) !important;
+  border-left: 0 !important; border-right: 0 !important;
+}
+.table-header, .leaderboard-stats { border-bottom-color: #fff !important; }
+.change-row { border-bottom-color: rgba(255,255,255,.18) !important; }
+
+/* Секционные шапки с ломаной линией */
+.section-head, .events-heading, .community-intro,
+.about-hero, .community-links, .google-form, .video-card,
+.panel-title, .page-heading {
+  border-radius: var(--rough) !important;
+}
+.section-head h2, .page-heading h1, .events-heading h1,
+.community-intro h1, .about-hero h1 { color: #fff !important; }
+.section-head {
+  border-bottom: 2px solid #fff !important;
+  transform: rotate(-.4deg);
+}
+
+/* Дырка-наклейка сверху у панелей — уже есть, рамка по ним белая */
+.date-divider::before, .date-divider::after,
+.section-head::before, .section-head::after { border-color: rgba(255,255,255,.3) !important; }
+
+/* Шрифт чище (не рукописный): ключевые надписи */
+.brand strong, .section-head h2, .page-heading h1, .events-heading h1,
+.community-intro h1, .about-hero h1, .panel-title h2,
+.table-header, .stat strong, .result-count {
+  font-family: "Nunito", "Comfortaa", system-ui, sans-serif !important;
+  font-weight: 800;
+}
+.brand strong { letter-spacing: .02em; }
+.stat small, .section-kicker, .eyebrow {
+  font-family: "Nunito", system-ui, sans-serif !important;
+  letter-spacing: .05em;
+}
