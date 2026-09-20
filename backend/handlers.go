@@ -22,7 +22,7 @@ func handleEventsCollection(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Cache-Control", "public, max-age=30")
+		w.Header().Set("Cache-Control", "no-store")
 		json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "events": events})
 	case "POST":
 		authMiddleware(handleAddEvent)(w, r)
@@ -123,7 +123,7 @@ func handleGetPlayers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Cache-Control", "public, max-age=30")
+	w.Header().Set("Cache-Control", "no-store")
 	json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "players": players})
 }
 
@@ -135,7 +135,7 @@ func handleRecentChanges(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Ошибка базы данных"})
 		return
 	}
-	w.Header().Set("Cache-Control", "public, max-age=60")
+	w.Header().Set("Cache-Control", "no-store")
 	json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "changes": changes})
 }
 
@@ -217,7 +217,7 @@ func handleAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if subtle.ConstantTimeCompare([]byte(strings.ToLower(req.CaptchaAnswer)), []byte(strings.ToLower(captcha.Answer))) != 1 {
-		log.Printf("[AUTH] FAIL captcha from %s", r.RemoteAddr)
+		log.Printf("[AUTH] FAIL captcha from %s", clientIP(r))
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Неверный ответ на капчу"})
 		return
@@ -230,7 +230,7 @@ func handleAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := bcrypt.CompareHashAndPassword(passwordHash, []byte(req.Password)); err != nil {
-		log.Printf("[AUTH] FAIL login from %s", r.RemoteAddr)
+		log.Printf("[AUTH] FAIL login from %s", clientIP(r))
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Неверный пароль"})
 		return
@@ -262,7 +262,7 @@ func handleAuth(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   86400,
 	})
 
-	log.Printf("[AUTH] OK login from %s", r.RemoteAddr)
+	log.Printf("[AUTH] OK login from %s", clientIP(r))
 	w.Header().Set("Content-Type", "application/json")
 	// The bundled admin UI keeps this token only in memory. Authentication also
 	// uses the HttpOnly session cookie, so the token is no longer persisted in
@@ -317,7 +317,7 @@ func handleAddPlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("[PLAYER] ADD %s by %s", req.Name, r.RemoteAddr)
+	log.Printf("[PLAYER] ADD %s by %s", req.Name, clientIP(r))
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "message": "Игрок добавлен"})
 }
@@ -364,7 +364,7 @@ func handleUpdatePlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("[PLAYER] UPDATE %s -> %s by %s", name, req.Name, r.RemoteAddr)
+	log.Printf("[PLAYER] UPDATE %s -> %s by %s", name, req.Name, clientIP(r))
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "message": "Игрок обновлён"})
 }
@@ -381,7 +381,7 @@ func handleDeletePlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("[PLAYER] DELETE %s by %s", name, r.RemoteAddr)
+	log.Printf("[PLAYER] DELETE %s by %s", name, clientIP(r))
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "message": "Игрок удалён"})
 }

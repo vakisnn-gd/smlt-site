@@ -27,10 +27,27 @@ function viewFromPath() {
 }
 const view = ref(viewFromPath())
 
+function updatePageMeta() {
+  const titles = {
+    leaderboard: lang.value === 'en' ? 'SMLT Leaderboard' : 'SMLT — рейтинг',
+    events: lang.value === 'en' ? 'SMLT Events' : 'SMLT — ивенты',
+    about: lang.value === 'en' ? 'About SMLT' : 'О SMLT',
+  }
+  const descriptions = {
+    leaderboard: lang.value === 'en' ? 'SMLT community leaderboard and player achievements.' : 'Рейтинг и достижения игроков сообщества SMLT.',
+    events: lang.value === 'en' ? 'SMLT collaborations, events and community projects.' : 'Коллабы, ивенты и проекты сообщества SMLT.',
+    about: lang.value === 'en' ? 'Information about the SMLT community, contacts and projects.' : 'Информация о сообществе SMLT, контакты и проекты.',
+  }
+  document.title = titles[view.value]
+  const description = document.querySelector('meta[name="description"]')
+  if (description) description.setAttribute('content', descriptions[view.value])
+}
+
 function navigate(next) {
   view.value = next
   const path = next === 'events' ? '/events' : next === 'about' ? '/about' : '/'
   if (location.pathname !== path) history.pushState({view: next}, '', path)
+  updatePageMeta()
   window.scrollTo({top: 0, behavior: 'smooth'})
 }
 
@@ -38,6 +55,7 @@ function toggleLanguage() {
   lang.value = lang.value === 'ru' ? 'en' : 'ru'
   localStorage.setItem('smlt-lang', lang.value)
   document.documentElement.lang = lang.value
+  updatePageMeta()
 }
 
 async function loadData() {
@@ -108,9 +126,10 @@ async function reloadEvents() {
 
 onMounted(() => {
   document.documentElement.lang = lang.value
+  updatePageMeta()
   loadData()
   checkSession()
-  window.addEventListener('popstate', () => { view.value = viewFromPath() })
+  window.addEventListener('popstate', () => { view.value = viewFromPath(); updatePageMeta() })
 })
 </script>
 

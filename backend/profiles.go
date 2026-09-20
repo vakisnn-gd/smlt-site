@@ -21,6 +21,7 @@ func servePlayersDirectory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-cache")
 	countrySet := make(map[string]bool)
 	for _, p := range players {
 		if p.Country != "" {
@@ -55,11 +56,23 @@ func servePlayerPage(w http.ResponseWriter, r *http.Request) {
 	canonical := "https://smlt.lol/player/" + url.PathEscape(p.Name)
 	description := fmt.Sprintf("%s — #%d в рейтинге SMLT, %.2f очков, сложнейший демон: %s.", p.Name, p.Rank, p.Points, p.Demon)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-cache")
 	fmt.Fprint(w, pageStart(p.Name+" · SMLT", description, canonical))
 	fmt.Fprintf(w, `<body data-player="%s"><main class="profile-shell"><nav><a href="/">← Рейтинг</a><a href="/players">Все игроки</a></nav><article class="profile-hero"><span class="country">%s</span><p class="eyebrow">ИГРОК SMLT</p><h1>%s</h1><div class="profile-stats"><div><strong>#%d</strong><span>место SMLT</span></div><div><strong>%.2f</strong><span>очков</span></div><div><strong>#%d</strong><span>в мире</span></div></div><p class="hardest">Сложнейший демон: <strong>%s</strong></p></article><section class="chart-card"><div><p class="eyebrow">ИСТОРИЯ</p><h2>Изменение очков</h2></div><svg id="history-chart" viewBox="0 0 800 260" role="img" aria-label="График очков"></svg><p id="history-empty" hidden>История появится после следующих обновлений рейтинга.</p></section></main><script src="/profile.js" defer></script></body></html>`, html.EscapeString(p.Name), html.EscapeString(p.Country), html.EscapeString(p.Name), p.Rank, p.Points, p.GlobalRank, html.EscapeString(p.Demon))
 }
 
 func serveSitemap(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
-	fmt.Fprint(w, `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://smlt.lol/</loc></url><url><loc>https://smlt.lol/events</loc></url></urlset>`)
+	w.Header().Set("Cache-Control", "no-cache")
+	locations := []string{"https://smlt.lol/", "https://smlt.lol/events", "https://smlt.lol/about", "https://smlt.lol/players"}
+	if players, err := dbGetPlayers(); err == nil {
+		for _, player := range players {
+			locations = append(locations, "https://smlt.lol/player/"+url.PathEscape(player.Name))
+		}
+	}
+	fmt.Fprint(w, `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`)
+	for _, location := range locations {
+		fmt.Fprintf(w, "<url><loc>%s</loc></url>", html.EscapeString(location))
+	}
+	fmt.Fprint(w, `</urlset>`)
 }

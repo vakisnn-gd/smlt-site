@@ -38,8 +38,12 @@ func main() {
 			serveSitemap(w, r)
 			return
 		}
-		if r.URL.Path == "/players" || strings.HasPrefix(r.URL.Path, "/player/") {
-			http.Redirect(w, r, "/", http.StatusMovedPermanently)
+		if r.URL.Path == "/players" {
+			servePlayersDirectory(w, r)
+			return
+		}
+		if strings.HasPrefix(r.URL.Path, "/player/") {
+			servePlayerPage(w, r)
 			return
 		}
 		if r.URL.Path != "/" {
@@ -64,8 +68,10 @@ func main() {
 	http.HandleFunc("/api/players", sec(bodyLimitMiddleware(handlePlayersCollection)))
 	http.HandleFunc("/api/players/", sec(bodyLimitMiddleware(authMiddleware(handlePlayerByMethod))))
 	http.HandleFunc("/api/recent-changes", sec(methodCheck("GET", handleRecentChanges)))
-	http.HandleFunc("/api/events", sec(handleEventsCollection))
+	http.HandleFunc("/api/events", sec(bodyLimitMiddleware(handleEventsCollection)))
 	http.HandleFunc("/api/events/", sec(authMiddleware(handleEventByMethod)))
+	http.HandleFunc("/api/profile/", sec(methodCheck("GET", handlePublicPlayer)))
+	http.HandleFunc("/api/history/", sec(methodCheck("GET", handlePlayerHistory)))
 	http.HandleFunc("/api/session", sec(methodCheck("GET", authMiddleware(handleSession))))
 	http.HandleFunc("/api/logout", sec(methodCheck("POST", handleLogout)))
 	http.HandleFunc("/api/captcha", sec(methodCheck("GET", rateLimitMiddleware("captcha", 60, handleGetCaptcha))))

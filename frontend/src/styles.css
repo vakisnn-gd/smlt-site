@@ -211,6 +211,8 @@ a { color: inherit; }
 .pdetails-levels-head { display: flex; align-items: center; gap: 10px; }
 .pdetails-levels-head h3 { margin: 0; font-size: 17px; }
 .pdetails-levels-state { margin: 16px 2px 2px; color: var(--muted); font-size: 14px; }
+.pdetails-levels-error { display: grid; justify-items: start; gap: 0; }
+.pdetails-retry { margin-top: 12px; min-height: 38px; padding-inline: 14px; font-size: 13px; }
 .pdetails-subsection { margin-top: 18px; }
 .pdetails-subsection-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
 .pdetails-subsection-head h4 { margin: 0; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #7eaee8; }

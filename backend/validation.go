@@ -41,16 +41,16 @@ func clientIP(r *http.Request) string {
 	}
 
 	if ip := net.ParseIP(host); ip != nil && (ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast()) {
+		if xri := strings.TrimSpace(r.Header.Get("X-Real-IP")); net.ParseIP(xri) != nil {
+			return xri
+		}
 		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
 			parts := strings.Split(xff, ",")
 			for i := len(parts) - 1; i >= 0; i-- {
-				if candidate := strings.TrimSpace(parts[i]); candidate != "" {
+				if candidate := strings.TrimSpace(parts[i]); net.ParseIP(candidate) != nil {
 					return candidate
 				}
 			}
-		}
-		if xri := strings.TrimSpace(r.Header.Get("X-Real-IP")); xri != "" {
-			return xri
 		}
 	}
 

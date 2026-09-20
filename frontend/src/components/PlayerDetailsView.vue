@@ -18,6 +18,7 @@ const records = ref(null)
 const levelsLoading = ref(false)
 const levelsError = ref('')
 const profileId = computed(() => Number(records.value?.id || props.player.gdlId) || 0)
+const requestTimeout = 8000
 
 const sections = computed(() => {
   const l = records.value?.levels
@@ -52,7 +53,7 @@ async function load() {
       levelsError.value = props.lang === 'en' ? 'Demonlist is taking too long. Try again.' : 'Demonlist долго не отвечает. Попробуйте ещё раз.'
       console.warn('[player-details] timeout for', playerName)
     }
-  }, 12000))
+  }, requestTimeout))
   try {
     const data = await Promise.race([api.levels(gdlId, playerName), guard.then(() => null)])
     if (settled) return
@@ -110,7 +111,7 @@ onBeforeUnmount(() => {
       <div class="pdetails-levels">
         <div class="pdetails-levels-head"><h3>{{ lang === 'en' ? 'Completed levels' : 'Пройденные уровни' }}</h3><span v-if="levelsLoading" class="mini-loader"></span></div>
         <div v-if="levelsLoading" class="pdetails-levels-state">{{ lang === 'en' ? 'Loading levels…' : 'Загружаем уровни…' }}</div>
-        <p v-else-if="levelsError" class="form-error">{{ levelsError }}</p>
+        <div v-else-if="levelsError" class="pdetails-levels-state pdetails-levels-error"><p class="form-error">{{ levelsError }}</p><button class="secondary-button pdetails-retry" @click="load">{{ lang === 'en' ? 'Try again' : 'Повторить' }}</button></div>
         <template v-else-if="sections.length">
           <section v-for="section in sections" :key="section.key" class="pdetails-subsection">
             <div class="pdetails-subsection-head"><h4>{{ section.label }}</h4><span>{{ section.items.length }}</span></div>
