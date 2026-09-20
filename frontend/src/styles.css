@@ -373,7 +373,7 @@ img.flag { width: 26px; height: 18px; border-radius: 3px; object-fit: cover; box
 .style-toggle > span:first-child { font-size: 15px; line-height: 1; }
 
 html[data-style="rough"] {
-  --bg: #121212;
+  --bg: #000;
   --surface: #171717;
   --surface-2: #1d1d1d;
   --surface-3: #242424;
@@ -389,9 +389,15 @@ html[data-style="rough"] {
 }
 
 html[data-style="rough"] body {
-  background: repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 2px, transparent 2px 4px), radial-gradient(800px 420px at 80% -10%, rgba(99,215,255,.1), transparent 70%), var(--bg);
+  background: #000;
   font-family: "Comic Sans MS", "Trebuchet MS", ui-rounded, sans-serif;
 }
+
+html[data-style="rough"] .app-shell { background: #000; }
+html[data-style="rough"] .leaderboard-stats .stat strong,
+html[data-style="rough"] .leaderboard-stats .stat small,
+html[data-style="rough"] .table-header,
+html[data-style="rough"] .section-kicker strong { color: #fff; }
 
 html[data-style="rough"] .site-header { background: rgba(18,18,18,.94); border-bottom: 2px solid #f4f4f4; }
 html[data-style="rough"] .brand strong,

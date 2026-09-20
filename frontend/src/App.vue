@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { api } from './api'
+import { setRoughFlags } from './data'
 import AppHeader from './components/AppHeader.vue'
 import LeaderboardView from './components/LeaderboardView.vue'
 import EventsView from './components/EventsView.vue'
@@ -15,6 +16,7 @@ const loading = ref(true)
 const error = ref('')
 const lang = ref(localStorage.getItem('smlt-lang') === 'en' ? 'en' : 'ru')
 const roughMode = ref(localStorage.getItem('smlt-style') === 'rough')
+setRoughFlags(roughMode.value)
 const isAdmin = ref(false)
 const showLogin = ref(false)
 const editingPlayer = ref(null)
@@ -37,6 +39,7 @@ applyStyle()
 function toggleStyle() {
   roughMode.value = !roughMode.value
   localStorage.setItem('smlt-style', roughMode.value ? 'rough' : 'classic')
+  setRoughFlags(roughMode.value)
   applyStyle()
 }
 

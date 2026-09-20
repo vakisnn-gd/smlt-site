@@ -1,3 +1,5 @@
+import { ref } from 'vue'
+
 export const countries = {
   RU: ['🇷🇺', 'Россия', 'Russia'], UA: ['🇺🇦', 'Украина', 'Ukraine'], BY: ['🇧🇾', 'Беларусь', 'Belarus'],
   RS: ['🇷🇸', 'Сербия', 'Serbia'], AM: ['🇦🇲', 'Армения', 'Armenia'], BG: ['🇧🇬', 'Болгария', 'Bulgaria'],
@@ -7,8 +9,16 @@ export const countries = {
   CA: ['🇨🇦', 'Канада', 'Canada'], BR: ['🇧🇷', 'Бразилия', 'Brazil'], OTHER: ['🌐', 'Другое', 'Other'],
 }
 
+const roughFlagFiles = {RU: 'rus', UA: 'ua', BY: 'by', RS: 'rs', AM: 'am', BG: 'bg', DE: 'de', KZ: 'kz', OTHER: 'none'}
+export const roughFlagsEnabled = ref(typeof localStorage !== 'undefined' && localStorage.getItem('smlt-style') === 'rough')
+
+export function setRoughFlags(enabled) {
+  roughFlagsEnabled.value = Boolean(enabled)
+}
+
 export function flagSrc(code, size = 40) {
   const c = String(code || '').toUpperCase()
+  if (roughFlagsEnabled.value && roughFlagFiles[c]) return `/flags/rough/${roughFlagFiles[c]}.png`
   if (c === 'OTHER' || !countries[c]) return `https://flagcdn.com/w${size}/un.png`
   const iso = countries[c] ? c.toLowerCase() : ''
   return iso ? `https://flagcdn.com/w${size}/${iso}.png` : ''
