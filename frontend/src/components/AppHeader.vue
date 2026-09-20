@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 
 defineProps({view: String, lang: String, isAdmin: Boolean})
-const emit = defineEmits(['navigate', 'language', 'login', 'add', 'logout'])
+const emit = defineEmits(['navigate', 'language', 'add', 'logout'])
 const menuOpen = ref(false)
 
 function go(view) {
@@ -22,13 +22,11 @@ function go(view) {
         <button :class="{active: view === 'about'}" @click="go('about')">{{ lang === 'en' ? 'About' : 'О SMLT' }}</button>
       </nav>
       <div class="nav-actions">
-        <a class="social-link" href="https://discord.gg/VK56W7ZzdA" target="_blank" rel="noopener">Discord</a>
         <button class="lang-button" @click="$emit('language')">{{ lang === 'en' ? 'RU' : 'EN' }}</button>
         <template v-if="isAdmin">
           <button class="icon-button add-button" :title="lang === 'en' ? 'Add player' : 'Добавить игрока'" @click="$emit('add')">＋</button>
           <button class="icon-button" :title="lang === 'en' ? 'Log out' : 'Выйти'" @click="$emit('logout')">↪</button>
         </template>
-        <button v-else class="admin-button" @click="$emit('login')">{{ lang === 'en' ? 'Admin' : 'Админ' }}</button>
       </div>
     </div>
   </header>

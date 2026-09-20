@@ -120,7 +120,7 @@ onMounted(() => {
     <main>
       <LeaderboardView v-if="view === 'leaderboard'" :players="players" :changes="changes" :loading="loading" :error="error" :lang="lang" :is-admin="isAdmin" @edit="openEdit" @delete="removePlayer" @retry="loadData" />
       <EventsView v-else-if="view === 'events'" :lang="lang" :events="events" :is-admin="isAdmin" @changed="reloadEvents" />
-      <AboutView v-else :lang="lang" @leaderboard="navigate('leaderboard')" @events="navigate('events')" />
+      <AboutView v-else :lang="lang" :is-admin="isAdmin" @leaderboard="navigate('leaderboard')" @events="navigate('events')" @login="showLogin = true" @logout="logout" />
     </main>
     <transition name="toast"><div v-if="notice" class="toast" @click="notice = ''">{{ notice }}</div></transition>
     <LoginModal v-if="showLogin" :lang="lang" @close="showLogin = false" @authenticated="showLogin = false; isAdmin = true" />
