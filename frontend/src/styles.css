@@ -104,6 +104,7 @@ a { color: inherit; }
 .change-row:last-child { border-bottom: 0; }
 .change-arrow { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; color: var(--green); background: rgba(54,211,145,.12); font-size: 13px; font-weight: 900; }
 .change-row p { margin: 0; color: #c5cdd7; line-height: 1.5; }
+.change-row .change-date { margin: 0 0 3px; color: #6f7b89; font-size: 11px; font-weight: 600; letter-spacing: .04em; }
 .change-row a, .change-row strong { color: #f0f4f8; font-weight: 650; text-decoration: none; }
 .change-row a:hover { color: var(--blue); }
 .change-row small { display: block; margin-top: 4px; color: #6f7b89; }

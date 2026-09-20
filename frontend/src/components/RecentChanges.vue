@@ -21,6 +21,14 @@ function dateLabel(value) {
   return new Intl.DateTimeFormat(props.lang === 'en' ? 'en-US' : 'ru-RU', {day: 'numeric', month: 'long', year: 'numeric'}).format(date).toUpperCase()
 }
 
+function dateTime(value) {
+  const date = new Date(value)
+  const locale = props.lang === 'en' ? 'en-US' : 'ru-RU'
+  const day = new Intl.DateTimeFormat(locale, {day: 'numeric', month: 'short', year: 'numeric'}).format(date)
+  const time = new Intl.DateTimeFormat(locale, {hour: '2-digit', minute: '2-digit'}).format(date)
+  return `${day}, ${time}`
+}
+
 const grouped = computed(() => {
   const groups = []
   for (const change of props.changes.slice(0, 20)) {
@@ -43,6 +51,7 @@ const grouped = computed(() => {
         <article v-for="change in group.changes" :key="change.id" class="change-row">
           <span class="change-arrow">↑</span>
           <div>
+            <small class="change-date">{{ dateTime(change.createdAt) }}</small>
             <p>
               <a v-if="playerUrl(change.playerName)" :href="playerUrl(change.playerName)" target="_blank" rel="noopener">{{ change.playerName }}</a><strong v-else>{{ change.playerName }}</strong>
               {{ lang === 'en' ? ` moved from #${change.oldRank} to #${change.newRank}` : ` поднялся с #${change.oldRank} на #${change.newRank}` }}
