@@ -92,7 +92,7 @@ onBeforeUnmount(() => {
       <div class="pdetails-hero">
         <img v-if="countryMeta(player.country, lang).flagSrc" class="pdetails-flag" :src="countryMeta(player.country, lang).flagSrc" :alt="countryMeta(player.country, lang).name"><span v-else class="pdetails-flag">{{ countryMeta(player.country, lang).flag }}</span>
         <div>
-          <p class="eyebrow">SMLT PLAYER</p>
+          <p class="eyebrow">{{ lang === 'en' ? 'SMLT PLAYER' : 'ИГРОК SMLT' }}</p>
           <h2 class="pdetails-name">{{ player.name }}</h2>
           <p class="pdetails-country">{{ countryMeta(player.country, lang).name }} · #{{ player.globalRank || '—' }} {{ lang === 'en' ? 'world' : 'в мире' }}</p>
         </div>

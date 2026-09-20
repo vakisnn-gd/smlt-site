@@ -79,12 +79,12 @@ async function move(event, direction) {
     <form v-if="showForm" class="event-admin" @submit.prevent="addEvent">
       <input v-model="form.videoId" :placeholder="lang === 'en' ? 'YouTube link or video ID' : 'Ссылка YouTube или ID видео'" required maxlength="200" autocomplete="off">
       <input v-model="form.title" :placeholder="lang === 'en' ? 'Title' : 'Название'" required maxlength="120">
-      <select v-model="form.category"><option value="beat">SMLT Beats</option><option value="project">{{ lang === 'en' ? 'Projects and collabs' : 'Проекты и коллабы' }}</option></select>
+      <select v-model="form.category"><option value="beat">{{ lang === 'en' ? 'SMLT Events' : 'Ивенты' }}</option><option value="project">{{ lang === 'en' ? 'Projects and collabs' : 'Проекты и коллабы' }}</option></select>
       <button class="primary-button" :disabled="saving">{{ lang === 'en' ? 'Add' : 'Добавить' }}</button>
       <p v-if="formError" class="form-error">{{ formError }}</p>
     </form>
     <section class="video-section">
-      <div class="section-head"><h2>SMLT Beats</h2></div>
+      <div class="section-head"><h2>{{ lang === 'en' ? 'SMLT Events' : 'Ивенты' }}</h2></div>
       <div class="video-layout">
         <div class="video-tabs"><div v-for="(event, index) in beats" :key="event.id" class="event-tab-row"><button :class="{active: selectedBeat && selectedBeat.id === event.id}" @click="selectedBeat = event">{{ event.title }}</button><template v-if="isAdmin"><button class="event-order" @click="move(event, -1)" :disabled="index === 0">↑</button><button class="event-order" @click="move(event, 1)" :disabled="index === beats.length - 1">↓</button><button class="event-order danger" @click="deleteEvent(event)">×</button></template></div></div>
         <div v-if="selectedBeat" class="video-card"><iframe :src="videoUrl(selectedBeat)" :title="selectedBeat.title" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe><h3>{{ selectedBeat.title }}</h3></div>

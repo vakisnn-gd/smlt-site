@@ -90,7 +90,7 @@ async function spinSMLT() {
     <div v-if="spinPlayer" class="spin-backdrop" @click.self="spinPlayer = null">
       <section class="spin-card" role="dialog" aria-modal="true" :aria-label="lang === 'en' ? 'SMLT random player' : 'Случайный игрок SMLT'">
         <button class="modal-close" :aria-label="lang === 'en' ? 'Close' : 'Закрыть'" @click="spinPlayer = null">×</button>
-        <p class="eyebrow">SMLT RANDOMIZER</p>
+        <p class="eyebrow">{{ lang === 'en' ? 'SMLT RANDOMIZER' : 'СЛУЧАЙНЫЙ ИГРОК SMLT' }}</p>
         <div class="spin-die" aria-hidden="true">{{ spinRolling ? '🎲' : '✦' }}</div>
         <h2>{{ spinPlayer.name }}</h2>
         <p class="spin-country"><img v-if="countryMeta(spinPlayer.country, lang).flagSrc" class="flag" :src="countryMeta(spinPlayer.country, lang).flagSrc" alt=""><span v-else>{{ countryMeta(spinPlayer.country, lang).flag }}</span>{{ countryMeta(spinPlayer.country, lang).name }}</p>

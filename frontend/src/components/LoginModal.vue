@@ -36,7 +36,7 @@ onMounted(refreshCaptcha)
   <div class="modal-backdrop" @mousedown.self="$emit('close')">
     <section class="modal small-modal" role="dialog" aria-modal="true">
       <button class="modal-close" @click="$emit('close')">×</button>
-      <p class="eyebrow">SMLT CONTROL</p><h2>{{ lang === 'en' ? 'Admin access' : 'Вход администратора' }}</h2><p class="modal-subtitle">{{ lang === 'en' ? 'Enter the server password and solve the captcha.' : 'Введите пароль сервера и решите капчу.' }}</p>
+      <p class="eyebrow">{{ lang === 'en' ? 'SMLT CONTROL' : 'УПРАВЛЕНИЕ SMLT' }}</p><h2>{{ lang === 'en' ? 'Admin access' : 'Вход администратора' }}</h2><p class="modal-subtitle">{{ lang === 'en' ? 'Enter the server password and solve the captcha.' : 'Введите пароль сервера и решите капчу.' }}</p>
       <form @submit.prevent="submit">
         <label>{{ lang === 'en' ? 'Password' : 'Пароль' }}<input v-model="password" type="password" autocomplete="current-password" required></label>
         <label>{{ lang === 'en' ? 'Captcha' : 'Капча' }}
