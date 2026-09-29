@@ -4,10 +4,9 @@ import { countryMeta } from '../data'
 import RecentChanges from './RecentChanges.vue'
 import PlayerDetailsView from './PlayerDetailsView.vue'
 
-const props = defineProps({players: Array, changes: Array, loading: Boolean, error: String, lang: String, isAdmin: Boolean})
-defineEmits(['edit', 'delete', 'retry'])
+const props = defineProps({players: Array, changes: Array, loading: Boolean, error: String, lang: String, isAdmin: Boolean, playerId: String})
+const emit = defineEmits(['edit', 'delete', 'retry', 'open-player', 'close-player'])
 const search = ref('')
-const selected = ref(null)
 const country = ref('ALL')
 const spinPlayer = ref(null)
 const spinRolling = ref(false)
@@ -25,6 +24,7 @@ const countryStats = computed(() => {
   for (const player of sorted.value) counts.set(player.country, (counts.get(player.country) || 0) + 1)
   return [...counts.entries()].sort((a, b) => (a[0] === 'OTHER') - (b[0] === 'OTHER') || b[1] - a[1])
 })
+const selected = computed(() => props.playerId ? sorted.value.find(player => String(player.gdlId || player.id) === props.playerId) || null : null)
 
 function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)) }
 
@@ -41,6 +41,7 @@ async function spinSMLT() {
 
 <template>
   <div class="page leaderboard-page">
+    <h1 class="sr-only">SMLT Leaderboard</h1>
     <div class="leaderboard-layout">
       <div class="leaderboard-col">
         <section class="leaderboard-card">
@@ -66,7 +67,7 @@ async function spinSMLT() {
               <article v-for="player in visible" :key="player.id" :class="['player-row', {'top-three': player.rank <= 3}]">
                 <span class="rank">{{ player.rank }}</span>
                 <img v-if="countryMeta(player.country, lang).flagSrc" class="flag" :src="countryMeta(player.country, lang).flagSrc" :alt="countryMeta(player.country, lang).name" :title="countryMeta(player.country, lang).name"><span v-else class="flag" :title="countryMeta(player.country, lang).name">{{ countryMeta(player.country, lang).flag }}</span>
-                <div class="player-cell"><button class="player-name-button" @click.stop="selected = player">{{ player.name }}</button><small class="mobile-demon">{{ player.demon }}</small></div>
+                <div class="player-cell"><button class="player-name-button" @click.stop="emit('open-player', player.gdlId || player.id)">{{ player.name }}</button><small class="mobile-demon">{{ player.demon }}</small></div>
                 <strong class="points">{{ Number(player.points).toFixed(2) }}</strong>
                 <span class="demon">{{ player.demon || '—' }}</span>
                 <span class="global-rank">#{{ player.globalRank || '—' }}</span>
@@ -82,11 +83,11 @@ async function spinSMLT() {
 
       <aside class="panel countries-sidebar">
         <div class="panel-title"><h2>{{ lang === 'en' ? 'Players by country' : 'Игроки по странам' }}</h2></div>
-        <div class="country-list"><button v-for="([code, count]) in countryStats" :key="code" @click="country = code"><img v-if="countryMeta(code, lang).flagSrc" class="flag" :src="countryMeta(code, lang).flagSrc" :alt="countryMeta(code, lang).name"><span v-else>{{ countryMeta(code, lang).flag }}</span><span>{{ countryMeta(code, lang).name }}</span><strong>{{ count }}</strong></button></div>
+        <div class="country-list"><button v-for="([code, count]) in countryStats" :key="code" :aria-pressed="country === code" @click="country = code"><img v-if="countryMeta(code, lang).flagSrc" class="flag" :src="countryMeta(code, lang).flagSrc" :alt="countryMeta(code, lang).name"><span v-else>{{ countryMeta(code, lang).flag }}</span><span>{{ countryMeta(code, lang).name }}</span><strong>{{ count }}</strong></button></div>
       </aside>
     </div>
 
-    <PlayerDetailsView v-if="selected" :player="selected" :players="sorted" :lang="lang" @close="selected = null" />
+    <PlayerDetailsView v-if="selected" :player="selected" :players="sorted" :lang="lang" @close="emit('close-player')" />
     <div v-if="spinPlayer" class="spin-backdrop" @click.self="spinPlayer = null">
       <section class="spin-card" role="dialog" aria-modal="true" :aria-label="lang === 'en' ? 'SMLT random player' : 'Случайный игрок SMLT'">
         <button class="modal-close" :aria-label="lang === 'en' ? 'Close' : 'Закрыть'" @click="spinPlayer = null">×</button>

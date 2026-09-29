@@ -109,18 +109,39 @@ func initDB() {
 		above_player VARCHAR(30) NOT NULL DEFAULT '',
 		below_player VARCHAR(30) NOT NULL DEFAULT '',
 		passed_players JSONB NOT NULL DEFAULT '[]'::jsonb,
+		country VARCHAR(10) NOT NULL DEFAULT '',
 		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 	);
+	ALTER TABLE rank_changes ADD COLUMN IF NOT EXISTS country VARCHAR(10) NOT NULL DEFAULT '';
 	CREATE INDEX IF NOT EXISTS idx_rank_changes_time ON rank_changes(created_at DESC);
+	CREATE TABLE IF NOT EXISTS player_events (
+		id BIGSERIAL PRIMARY KEY,
+		event_type VARCHAR(16) NOT NULL,
+		player_name VARCHAR(30) NOT NULL,
+		country VARCHAR(10) NOT NULL DEFAULT '',
+		detail VARCHAR(160) NOT NULL DEFAULT '',
+		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	);
+	ALTER TABLE player_events ADD COLUMN IF NOT EXISTS detail VARCHAR(160) NOT NULL DEFAULT '';
+	CREATE INDEX IF NOT EXISTS idx_player_events_time ON player_events(created_at DESC);
+	CREATE TABLE IF NOT EXISTS player_demons (
+		player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+		demon_id BIGINT NOT NULL,
+		demon_name VARCHAR(160) NOT NULL,
+		first_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+		PRIMARY KEY (player_id, demon_id)
+	);
 	CREATE TABLE IF NOT EXISTS events (
 		id SERIAL PRIMARY KEY,
 		video_id VARCHAR(32) NOT NULL,
 		title VARCHAR(120) NOT NULL,
 		category VARCHAR(20) NOT NULL DEFAULT 'project',
+		status VARCHAR(24) NOT NULL DEFAULT 'planned',
 		sort_order INTEGER NOT NULL DEFAULT 0,
 		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 	);
 	CREATE INDEX IF NOT EXISTS idx_events_order ON events(sort_order, id);
+	ALTER TABLE events ADD COLUMN IF NOT EXISTS status VARCHAR(24) NOT NULL DEFAULT 'planned';
 	`
 	if _, err := db.Exec(schema); err != nil {
 		log.Fatal("Failed to create schema:", err)
@@ -176,7 +197,7 @@ func normalizeStoredEventVideoIDs() {
 }
 
 func dbGetEvents() ([]Event, error) {
-	rows, err := db.Query("SELECT id, video_id, title, category, sort_order FROM events ORDER BY sort_order ASC, id ASC")
+	rows, err := db.Query("SELECT id, video_id, title, category, COALESCE(status, 'planned'), sort_order FROM events ORDER BY sort_order ASC, id ASC")
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +205,7 @@ func dbGetEvents() ([]Event, error) {
 	var events []Event
 	for rows.Next() {
 		var event Event
-		if err := rows.Scan(&event.ID, &event.VideoID, &event.Title, &event.Category, &event.SortOrder); err != nil {
+		if err := rows.Scan(&event.ID, &event.VideoID, &event.Title, &event.Category, &event.Status, &event.SortOrder); err != nil {
 			return nil, err
 		}
 		events = append(events, event)
@@ -197,8 +218,20 @@ func dbAddEvent(event Event) error {
 	if err := db.QueryRow("SELECT COALESCE(MAX(sort_order), -1) FROM events").Scan(&maxOrder); err != nil {
 		return err
 	}
-	_, err := db.Exec("INSERT INTO events (video_id, title, category, sort_order) VALUES ($1,$2,$3,$4)", event.VideoID, event.Title, event.Category, maxOrder+1)
+	_, err := db.Exec("INSERT INTO events (video_id, title, category, status, sort_order) VALUES ($1,$2,$3,$4,$5)", event.VideoID, event.Title, event.Category, event.Status, maxOrder+1)
 	return err
+}
+
+func dbUpdateEventStatus(id int, status string) error {
+	res, err := db.Exec("UPDATE events SET status=$1 WHERE id=$2 AND category='project'", status, id)
+	if err != nil {
+		return err
+	}
+	count, _ := res.RowsAffected()
+	if count == 0 {
+		return fmt.Errorf("коллаб не найден")
+	}
+	return nil
 }
 
 func dbDeleteEvent(id int) error {
@@ -263,6 +296,8 @@ func dbAddPlayer(p Player) error {
 	}
 	refreshRanks()
 	db.Exec("INSERT INTO player_history (player_id, points, global_rank) VALUES ($1,$2,$3)", p.ID, p.Points, p.GlobalRank)
+	db.Exec("INSERT INTO player_events (event_type, player_name, country, detail) VALUES ('added',$1,$2,'')", p.Name, p.Country)
+	notifyPlayerEvent("player-added", fmt.Sprintf("%s **%s** добавлен в список", countryFlag(p.Country), p.Name))
 	return nil
 }
 
@@ -307,6 +342,8 @@ func dbGetHistory(name string) ([]HistoryPoint, error) {
 }
 
 func dbDeletePlayer(name string) error {
+	var country string
+	_ = db.QueryRow("SELECT country FROM players WHERE lower(name)=lower($1)", name).Scan(&country)
 	res, err := db.Exec("DELETE FROM players WHERE lower(name) = lower($1)", name)
 	if err != nil {
 		return err
@@ -316,6 +353,8 @@ func dbDeletePlayer(name string) error {
 		return fmt.Errorf("игрок не найден")
 	}
 	refreshRanks()
+	db.Exec("INSERT INTO player_events (event_type, player_name, country, detail) VALUES ('removed',$1,$2,'')", name, country)
+	notifyPlayerEvent("player-removed", fmt.Sprintf("%s **%s** удалён из списка", countryFlag(country), name))
 	return nil
 }
 

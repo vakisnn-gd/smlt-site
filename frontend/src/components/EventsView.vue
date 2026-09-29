@@ -7,11 +7,19 @@ const emit = defineEmits(['changed'])
 const selectedBeat = ref(null)
 const selectedProject = ref(null)
 const showForm = ref(false)
-const form = ref({videoId: '', title: '', category: 'beat'})
+const form = ref({videoId: '', title: '', category: 'beat', status: 'planned'})
 const formError = ref('')
 const saving = ref(false)
 const beats = computed(() => props.events.filter(event => event.category === 'beat'))
 const projects = computed(() => props.events.filter(event => event.category === 'project'))
+const collabStatuses = [
+  {id: 'ready-verify', ru: 'готов и верифнут', en: 'ready and verified'},
+  {id: 'ready', ru: 'готов', en: 'ready'},
+  {id: 'in-progress', ru: 'в процессе', en: 'in progress'},
+  {id: 'planned', ru: 'планируется', en: 'planned'},
+  {id: 'dead', ru: 'мёртв', en: 'dead'},
+  {id: 'frozen', ru: 'заморожен', en: 'frozen'},
+]
 
 watch(() => props.events, list => {
   if (!selectedBeat.value || !beats.value.some(event => event.id === selectedBeat.value.id)) selectedBeat.value = beats.value[0] || null
@@ -19,6 +27,8 @@ watch(() => props.events, list => {
 }, {immediate: true})
 
 function videoUrl(event) { return `https://www.youtube-nocookie.com/embed/${event.videoId}?rel=0&modestbranding=1` }
+function statusMeta(status) { return collabStatuses.find(item => item.id === status) || collabStatuses[3] }
+function statusLabel(status) { const item = statusMeta(status); return props.lang === 'en' ? item.en : item.ru }
 function extractYouTubeId(value) {
   const raw = String(value || '').trim()
   if (!raw) return ''
@@ -53,7 +63,7 @@ async function addEvent() {
     saving.value = false
     return
   }
-  try { await api.addEvent({...form.value, videoId}); form.value = {videoId: '', title: '', category: 'beat'}; showForm.value = false; emit('changed') }
+  try { await api.addEvent({...form.value, videoId}); form.value = {videoId: '', title: '', category: 'beat', status: 'planned'}; showForm.value = false; emit('changed') }
   catch (err) { formError.value = err.message }
   finally { saving.value = false }
 }
@@ -71,30 +81,37 @@ async function move(event, direction) {
   const list = event.category === 'beat' ? [...same, ...other] : [...other, ...same]
   try { await api.reorderEvents(list.map(item => item.id)); emit('changed') } catch (err) { formError.value = err.message }
 }
+async function updateStatus(event, status) {
+  try { await api.updateEventStatus(event.id, status); emit('changed') } catch (err) { formError.value = err.message }
+}
 </script>
 
 <template>
   <div class="page events-page">
-    <header class="events-heading"><div><h1>{{ lang === 'en' ? 'Events and projects' : 'Ивенты и проекты' }}</h1><p>{{ lang === 'en' ? 'Completions and collaborations by SMLT.' : 'Совместные прохождения и коллабы SMLT.' }}</p></div><button v-if="isAdmin" class="secondary-button" @click="showForm = !showForm">{{ showForm ? '×' : '+' }} {{ lang === 'en' ? 'Manage events' : 'Управление' }}</button></header>
+    <header class="events-heading"><div><h1>{{ lang === 'en' ? 'Events and collabs' : 'Ивенты и коллабы' }}</h1><p>{{ lang === 'en' ? 'Completions and collaborations by SMLT.' : 'Совместные прохождения и коллабы SMLT.' }}</p></div><button v-if="isAdmin" class="secondary-button" @click="showForm = !showForm">{{ showForm ? '×' : '+' }} {{ lang === 'en' ? 'Manage events' : 'Управление' }}</button></header>
     <form v-if="showForm" class="event-admin" @submit.prevent="addEvent">
-      <input v-model="form.videoId" :placeholder="lang === 'en' ? 'YouTube link or video ID' : 'Ссылка YouTube или ID видео'" required maxlength="200" autocomplete="off">
-      <input v-model="form.title" :placeholder="lang === 'en' ? 'Title' : 'Название'" required maxlength="120">
-      <select v-model="form.category"><option value="beat">{{ lang === 'en' ? 'SMLT Events' : 'Ивенты' }}</option><option value="project">{{ lang === 'en' ? 'Projects and collabs' : 'Проекты и коллабы' }}</option></select>
+      <input v-model="form.videoId" :aria-label="lang === 'en' ? 'YouTube link or video ID' : 'Ссылка YouTube или ID видео'" :placeholder="lang === 'en' ? 'YouTube link or video ID' : 'Ссылка YouTube или ID видео'" required maxlength="200" autocomplete="off">
+      <input v-model="form.title" :aria-label="lang === 'en' ? 'Title' : 'Название'" :placeholder="lang === 'en' ? 'Title' : 'Название'" required maxlength="120">
+      <select v-model="form.category" :aria-label="lang === 'en' ? 'Category' : 'Категория'"><option value="beat">{{ lang === 'en' ? 'SMLT Events' : 'Ивенты' }}</option><option value="project">{{ lang === 'en' ? 'Collabs' : 'Коллабы' }}</option></select>
+      <select v-model="form.status" :disabled="form.category !== 'project'" :aria-label="lang === 'en' ? 'Collab status' : 'Статус коллаба'"><option v-for="status in collabStatuses" :key="status.id" :value="status.id">{{ lang === 'en' ? status.en : status.ru }}</option></select>
       <button class="primary-button" :disabled="saving">{{ lang === 'en' ? 'Add' : 'Добавить' }}</button>
       <p v-if="formError" class="form-error">{{ formError }}</p>
     </form>
     <section class="video-section">
       <div class="section-head"><h2>{{ lang === 'en' ? 'SMLT Events' : 'Ивенты' }}</h2></div>
       <div class="video-layout">
-        <div class="video-tabs"><div v-for="(event, index) in beats" :key="event.id" class="event-tab-row"><button :class="{active: selectedBeat && selectedBeat.id === event.id}" @click="selectedBeat = event">{{ event.title }}</button><template v-if="isAdmin"><button class="event-order" @click="move(event, -1)" :disabled="index === 0">↑</button><button class="event-order" @click="move(event, 1)" :disabled="index === beats.length - 1">↓</button><button class="event-order danger" @click="deleteEvent(event)">×</button></template></div></div>
-        <div v-if="selectedBeat" class="video-card"><iframe :src="videoUrl(selectedBeat)" :title="selectedBeat.title" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe><h3>{{ selectedBeat.title }}</h3></div>
+        <div class="video-tabs" role="tablist"><div v-for="(event, index) in beats" :key="event.id" class="event-tab-row"><button role="tab" :aria-selected="selectedBeat && selectedBeat.id === event.id" :class="{active: selectedBeat && selectedBeat.id === event.id}" @click="selectedBeat = event">{{ event.title }}</button><template v-if="isAdmin"><button class="event-order" @click="move(event, -1)" :disabled="index === 0">↑</button><button class="event-order" @click="move(event, 1)" :disabled="index === beats.length - 1">↓</button><button class="event-order danger" @click="deleteEvent(event)">×</button></template></div></div>
+        <div v-if="selectedBeat" class="video-card"><iframe :src="videoUrl(selectedBeat)" :title="selectedBeat.title" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe><h3>{{ selectedBeat.title }}</h3></div>
       </div>
     </section>
-    <section class="video-section">
-      <div class="section-head"><h2>{{ lang === 'en' ? 'Projects and collabs' : 'Проекты и коллабы' }}</h2></div>
+    <section class="video-section collabs-section">
+      <div class="section-head"><h2>{{ lang === 'en' ? 'Collabs' : 'Коллабы' }}</h2></div>
+      <div class="collab-status-legend" :aria-label="lang === 'en' ? 'Collab status legend' : 'Обозначения статусов коллабов'">
+        <span v-for="status in collabStatuses" :key="status.id" class="collab-status-legend-item"><i :class="['collab-status-square', `status-${status.id}`]" aria-hidden="true"></i>{{ lang === 'en' ? status.en : status.ru }}</span>
+      </div>
       <div class="video-layout">
-        <div class="video-tabs"><div v-for="(event, index) in projects" :key="event.id" class="event-tab-row"><button :class="{active: selectedProject && selectedProject.id === event.id}" @click="selectedProject = event">{{ event.title }}</button><template v-if="isAdmin"><button class="event-order" @click="move(event, -1)" :disabled="index === 0">↑</button><button class="event-order" @click="move(event, 1)" :disabled="index === projects.length - 1">↓</button><button class="event-order danger" @click="deleteEvent(event)">×</button></template></div></div>
-        <div v-if="selectedProject" class="video-card"><iframe :src="videoUrl(selectedProject)" :title="selectedProject.title" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe><h3>{{ selectedProject.title }}</h3></div>
+        <div class="video-tabs" role="tablist"><div v-for="(event, index) in projects" :key="event.id" class="event-tab-row"><span :class="['collab-status-square', `status-${statusMeta(event.status).id}`]" role="img" :aria-label="statusLabel(event.status)" :title="statusLabel(event.status)"></span><button role="tab" :aria-selected="selectedProject && selectedProject.id === event.id" :class="{active: selectedProject && selectedProject.id === event.id}" @click="selectedProject = event">{{ event.title }}</button><template v-if="isAdmin"><select class="event-status-select" :aria-label="lang === 'en' ? `Status: ${event.title}` : `Статус: ${event.title}`" :value="statusMeta(event.status).id" @change="updateStatus(event, $event.target.value)"><option v-for="status in collabStatuses" :key="status.id" :value="status.id">{{ lang === 'en' ? status.en : status.ru }}</option></select><button class="event-order" @click="move(event, -1)" :disabled="index === 0">↑</button><button class="event-order" @click="move(event, 1)" :disabled="index === projects.length - 1">↓</button><button class="event-order danger" @click="deleteEvent(event)">×</button></template></div></div>
+        <div v-if="selectedProject" class="video-card"><iframe :src="videoUrl(selectedProject)" :title="selectedProject.title" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe><h3>{{ selectedProject.title }}</h3></div>
       </div>
     </section>
   </div>

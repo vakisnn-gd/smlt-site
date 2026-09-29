@@ -21,7 +21,17 @@ type RankChange struct {
 	AbovePlayer   string    `json:"abovePlayer,omitempty"`
 	BelowPlayer   string    `json:"belowPlayer,omitempty"`
 	PassedPlayers []string  `json:"passedPlayers"`
+	Country       string    `json:"country"`
 	CreatedAt     time.Time `json:"createdAt"`
+}
+
+type PlayerEvent struct {
+	ID         int64     `json:"id"`
+	EventType  string    `json:"eventType"`
+	PlayerName string    `json:"playerName"`
+	Country    string    `json:"country"`
+	Detail     string    `json:"detail,omitempty"`
+	CreatedAt  time.Time `json:"createdAt"`
 }
 
 type HistoryPoint struct {
@@ -35,6 +45,7 @@ type Event struct {
 	VideoID   string `json:"videoId"`
 	Title     string `json:"title"`
 	Category  string `json:"category"`
+	Status    string `json:"status"`
 	SortOrder int    `json:"sortOrder"`
 }
 
@@ -42,6 +53,7 @@ type EventRequest struct {
 	VideoID  string `json:"videoId"`
 	Title    string `json:"title"`
 	Category string `json:"category"`
+	Status   string `json:"status"`
 }
 
 type Captcha struct {

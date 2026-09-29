@@ -32,10 +32,10 @@ onBeforeUnmount(() => clearTimeout(brandClickTimer))
     <div class="nav-wrap">
       <button class="mobile-menu" :aria-expanded="menuOpen" :aria-label="lang === 'en' ? 'Open menu' : 'Открыть меню'" @click="menuOpen = !menuOpen"><span></span><span></span><span></span></button>
       <button class="brand" @click="brandClick"><img class="brand-favicon" :src="roughMode ? '/avatars/smlt-rough.webp' : '/favicon2.ico'" alt=""><strong>SMLT</strong></button>
-      <nav :class="['primary-nav', {open: menuOpen}]">
-        <button :class="{active: view === 'leaderboard'}" @click="go('leaderboard')">{{ lang === 'en' ? 'Leaderboard' : 'Рейтинг' }}</button>
-        <button :class="{active: view === 'events'}" @click="go('events')">{{ lang === 'en' ? 'Events' : 'Ивенты' }}</button>
-        <button :class="{active: view === 'about'}" @click="go('about')">{{ lang === 'en' ? 'About' : 'О SMLT' }}</button>
+      <nav :class="['primary-nav', {open: menuOpen}]" :aria-label="lang === 'en' ? 'Main navigation' : 'Основная навигация'" @keydown.esc="menuOpen = false">
+        <button :class="{active: view === 'leaderboard'}" :aria-current="view === 'leaderboard' ? 'page' : undefined" @click="go('leaderboard')">{{ lang === 'en' ? 'Leaderboard' : 'Рейтинг' }}</button>
+        <button :class="{active: view === 'events'}" :aria-current="view === 'events' ? 'page' : undefined" @click="go('events')">{{ lang === 'en' ? 'Events' : 'Ивенты' }}</button>
+        <button :class="{active: view === 'about'}" :aria-current="view === 'about' ? 'page' : undefined" @click="go('about')">{{ lang === 'en' ? 'About' : 'О SMLT' }}</button>
       </nav>
       <div class="nav-actions">
         <button class="style-toggle" :class="{active: roughMode}" :aria-pressed="roughMode" :title="roughMode ? (lang === 'en' ? 'Switch to clean style' : 'Вернуть обычный стиль') : (lang === 'en' ? 'Turn on playful style' : 'Включить рофляный стиль')" @click="$emit('style')"><span aria-hidden="true">{{ roughMode ? '✎' : '✦' }}</span><span class="style-toggle-label">{{ roughMode ? (lang === 'en' ? 'Playful' : 'Рофл') : (lang === 'en' ? 'Clean' : 'Обычный') }}</span></button>

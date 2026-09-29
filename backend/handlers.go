@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 	"time"
 
@@ -35,18 +36,32 @@ func handleEventsCollection(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleEventByMethod(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "DELETE" {
-		w.Header().Set("Allow", "DELETE")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
 	var id int
 	if _, err := fmt.Sscanf(strings.TrimPrefix(r.URL.Path, "/api/events/"), "%d", &id); err != nil || id < 1 {
 		http.Error(w, `{"success":false,"message":"Неверный идентификатор"}`, http.StatusBadRequest)
 		return
 	}
-	if err := dbDeleteEvent(id); err != nil {
-		http.Error(w, `{"success":false,"message":"Ивент не найден"}`, http.StatusNotFound)
+	switch r.Method {
+	case "DELETE":
+		if err := dbDeleteEvent(id); err != nil {
+			http.Error(w, `{"success":false,"message":"Ивент не найден"}`, http.StatusNotFound)
+			return
+		}
+	case "PUT":
+		var req struct {
+			Status string `json:"status"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil || !validEventStatus(req.Status) {
+			http.Error(w, `{"success":false,"message":"Неверный статус коллаба"}`, http.StatusBadRequest)
+			return
+		}
+		if err := dbUpdateEventStatus(id, req.Status); err != nil {
+			http.Error(w, `{"success":false,"message":"Коллаб не найден"}`, http.StatusNotFound)
+			return
+		}
+	default:
+		w.Header().Set("Allow", "PUT, DELETE")
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -59,19 +74,31 @@ func handleAddEvent(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"success":false,"message":"Неверный запрос"}`, http.StatusBadRequest)
 		return
 	}
-	req.VideoID, req.Title, req.Category = sanitizeInput(req.VideoID), sanitizeInput(req.Title), sanitizeInput(req.Category)
+	req.VideoID, req.Title, req.Category, req.Status = sanitizeInput(req.VideoID), sanitizeInput(req.Title), sanitizeInput(req.Category), sanitizeInput(req.Status)
+	if req.Status == "" {
+		req.Status = "planned"
+	}
 	videoID, validVideo := normalizeYouTubeID(req.VideoID)
-	if !validVideo || len(req.Title) < 1 || len(req.Title) > 120 || (req.Category != "beat" && req.Category != "project") {
+	if !validVideo || len(req.Title) < 1 || len(req.Title) > 120 || (req.Category != "beat" && req.Category != "project") || !validEventStatus(req.Status) {
 		http.Error(w, `{"success":false,"message":"Вставьте корректную ссылку YouTube или 11-символьный ID, название и категорию"}`, http.StatusBadRequest)
 		return
 	}
 	req.VideoID = videoID
-	if err := dbAddEvent(Event{VideoID: req.VideoID, Title: req.Title, Category: req.Category}); err != nil {
+	if err := dbAddEvent(Event{VideoID: req.VideoID, Title: req.Title, Category: req.Category, Status: req.Status}); err != nil {
 		http.Error(w, `{"success":false,"message":"Ошибка базы данных"}`, http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{"success": true})
+}
+
+func validEventStatus(status string) bool {
+	switch status {
+	case "ready-verify", "ready", "in-progress", "planned", "dead", "frozen":
+		return true
+	default:
+		return false
+	}
 }
 
 func handleReorderEvents(w http.ResponseWriter, r *http.Request) {
@@ -137,14 +164,43 @@ func handleRecentChanges(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Ошибка базы данных"})
 		return
 	}
+	events, err := dbGetRecentPlayerEvents(40)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Ошибка базы данных"})
+		return
+	}
+	// Keep one feed sorted by time while preserving the existing rank-change shape.
+	feed := make([]interface{}, 0, len(changes)+len(events))
+	for _, c := range changes {
+		feed = append(feed, c)
+	}
+	for _, e := range events {
+		feed = append(feed, e)
+	}
+	sort.SliceStable(feed, func(i, j int) bool { return changeCreatedAt(feed[i]).After(changeCreatedAt(feed[j])) })
 	w.Header().Set("Cache-Control", "no-store")
-	json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "changes": changes})
+	json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "changes": feed})
+}
+
+func changeCreatedAt(v interface{}) time.Time {
+	switch x := v.(type) {
+	case RankChange:
+		return x.CreatedAt
+	case PlayerEvent:
+		return x.CreatedAt
+	}
+	return time.Time{}
 }
 
 func handleSession(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
-	json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "authenticated": true})
+	authenticated := false
+	if cookie, err := r.Cookie("smlt_session"); err == nil && cookie.Value != "" {
+		authenticated = validateToken(cookie.Value)
+	}
+	json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "authenticated": authenticated})
 }
 
 func handleLogout(w http.ResponseWriter, r *http.Request) {

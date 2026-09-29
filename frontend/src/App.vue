@@ -1,5 +1,6 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { api } from './api'
 import { setRoughFlags } from './data'
 import AppHeader from './components/AppHeader.vue'
@@ -14,7 +15,7 @@ const changes = ref([])
 const events = ref([])
 const loading = ref(true)
 const error = ref('')
-const lang = ref(localStorage.getItem('smlt-lang') === 'en' ? 'en' : 'ru')
+const lang = ref(location.pathname === '/en' || location.pathname.startsWith('/en/') ? 'en' : 'ru')
 const roughMode = ref(localStorage.getItem('smlt-style') === 'rough')
 setRoughFlags(roughMode.value)
 const isAdmin = ref(false)
@@ -23,13 +24,16 @@ const editingPlayer = ref(null)
 const showPlayerModal = ref(false)
 const notice = ref('')
 const showEasterEgg = ref(false)
+const route = useRoute()
+const router = useRouter()
+const loaded = ref({leaderboard: false, events: false})
 
-function viewFromPath() {
-  if (location.pathname === '/events') return 'events'
-  if (location.pathname === '/about') return 'about'
-  return 'leaderboard'
+const view = computed(() => route.meta.view || 'leaderboard')
+const playerId = computed(() => String(route.name).endsWith('player') ? String(route.params.id) : '')
+
+function routeName(name, language = lang.value) {
+  return language === 'en' ? `en-${name}` : name
 }
-const view = ref(viewFromPath())
 
 function applyStyle() {
   document.documentElement.dataset.style = roughMode.value ? 'rough' : 'classic'
@@ -52,37 +56,51 @@ function updatePageMeta() {
   }
   const descriptions = {
     leaderboard: lang.value === 'en' ? 'SMLT community leaderboard and player achievements.' : 'Рейтинг и достижения игроков сообщества SMLT.',
-    events: lang.value === 'en' ? 'SMLT collaborations, events and community projects.' : 'Коллабы, ивенты и проекты сообщества SMLT.',
+    events: lang.value === 'en' ? 'SMLT events and collaborations.' : 'Ивенты и коллабы сообщества SMLT.',
     about: lang.value === 'en' ? 'Information about the SMLT community, contacts and projects.' : 'Информация о сообществе SMLT, контакты и проекты.',
   }
-  document.title = titles[view.value]
+  const selectedPlayer = playerId.value && players.value.find(player => String(player.gdlId || player.id) === playerId.value)
+  document.title = selectedPlayer ? `${selectedPlayer.name} — SMLT` : titles[view.value]
   const description = document.querySelector('meta[name="description"]')
   if (description) description.setAttribute('content', descriptions[view.value])
+  const canonicalUrl = `https://smlt.lol${route.path}`
+  const canonical = document.querySelector('link[rel="canonical"]')
+  if (canonical) canonical.setAttribute('href', canonicalUrl)
+  const ogTitle = document.querySelector('meta[property="og:title"]')
+  const ogDescription = document.querySelector('meta[property="og:description"]')
+  const ogUrl = document.querySelector('meta[property="og:url"]')
+  if (ogTitle) ogTitle.setAttribute('content', document.title)
+  if (ogDescription) ogDescription.setAttribute('content', descriptions[view.value])
+  if (ogUrl) ogUrl.setAttribute('content', canonicalUrl)
+  const alternatePath = route.path.replace(/^\/en(?=\/|$)/, '') || '/'
+  const ruUrl = `https://smlt.lol${alternatePath}`
+  const enUrl = `https://smlt.lol/en${alternatePath === '/' ? '' : alternatePath}`
+  document.querySelector('link[hreflang="ru"]')?.setAttribute('href', ruUrl)
+  document.querySelector('link[hreflang="en"]')?.setAttribute('href', enUrl)
+  document.querySelector('link[hreflang="x-default"]')?.setAttribute('href', ruUrl)
 }
 
 function navigate(next) {
-  view.value = next
-  const path = next === 'events' ? '/events' : next === 'about' ? '/about' : '/'
-  if (location.pathname !== path) history.pushState({view: next}, '', path)
-  updatePageMeta()
-  window.scrollTo({top: 0, behavior: 'smooth'})
+  router.push({name: routeName(next)})
 }
 
 function toggleLanguage() {
-  lang.value = lang.value === 'ru' ? 'en' : 'ru'
-  localStorage.setItem('smlt-lang', lang.value)
-  document.documentElement.lang = lang.value
-  updatePageMeta()
+  const next = lang.value === 'ru' ? 'en' : 'ru'
+  localStorage.setItem('smlt-lang', next)
+  const target = playerId.value ? 'player' : view.value
+  router.push({name: routeName(target, next), params: playerId.value ? {id: playerId.value} : {}})
 }
 
-async function loadData() {
+async function loadLeaderboard(force = false) {
+  if (loaded.value.leaderboard && !force) return
   loading.value = true
   error.value = ''
   try {
-    const [playerData, changeData, eventData] = await Promise.all([api.players(), api.changes(), api.events()])
-    players.value = playerData.players || []
-    changes.value = changeData.changes || []
-    events.value = eventData.events || []
+    const results = await Promise.allSettled([api.players(), api.changes()])
+    if (results[0].status === 'rejected') throw results[0].reason
+    players.value = results[0].value.players || []
+    if (results[1].status === 'fulfilled') changes.value = results[1].value.changes || []
+    loaded.value.leaderboard = true
   } catch (err) {
     error.value = err.message
   } finally {
@@ -90,10 +108,28 @@ async function loadData() {
   }
 }
 
+async function loadEvents(force = false) {
+  if (loaded.value.events && !force) return true
+  try {
+    const eventData = await api.events()
+    events.value = eventData.events || []
+    loaded.value.events = true
+    return true
+  } catch (err) {
+    notice.value = err.message
+    return false
+  }
+}
+
+function loadRouteData() {
+  if (view.value === 'leaderboard') loadLeaderboard()
+  if (view.value === 'events') loadEvents()
+}
+
 async function checkSession() {
   try {
-    await api.session()
-    isAdmin.value = true
+    const session = await api.session()
+    isAdmin.value = session.authenticated === true
   } catch {
     isAdmin.value = false
   }
@@ -115,7 +151,7 @@ async function removePlayer(player) {
   try {
     await api.deletePlayer(player.name)
     notice.value = lang.value === 'en' ? 'Player deleted' : 'Игрок удалён'
-    await loadData()
+    await loadLeaderboard(true)
   } catch (err) {
     notice.value = err.message
     if (err.status === 401) isAdmin.value = false
@@ -125,7 +161,7 @@ async function removePlayer(player) {
 async function savedPlayer() {
   showPlayerModal.value = false
   notice.value = lang.value === 'en' ? 'Leaderboard updated' : 'Рейтинг обновлён'
-  await loadData()
+  await loadLeaderboard(true)
 }
 
 async function logout() {
@@ -134,34 +170,40 @@ async function logout() {
 }
 
 async function reloadEvents() {
-  try {
-    const eventData = await api.events()
-    events.value = eventData.events || []
+  if (await loadEvents(true)) {
     notice.value = lang.value === 'en' ? 'Events updated' : 'Ивенты обновлены'
-  } catch (err) { notice.value = err.message }
+  }
 }
 
 onMounted(() => {
+  lang.value = route.meta.lang || 'ru'
   applyStyle()
   document.documentElement.lang = lang.value
   updatePageMeta()
-  loadData()
+  loadRouteData()
   checkSession()
-  window.addEventListener('popstate', () => { view.value = viewFromPath(); updatePageMeta() })
 })
+
+watch(() => route.fullPath, () => {
+  lang.value = route.meta.lang || 'ru'
+  document.documentElement.lang = lang.value
+  loadRouteData()
+  updatePageMeta()
+})
+watch(players, updatePageMeta)
 </script>
 
 <template>
   <div class="app-shell">
     <AppHeader :view="view" :lang="lang" :is-admin="isAdmin" :rough-mode="roughMode" @navigate="navigate" @language="toggleLanguage" @style="toggleStyle" @easter-egg="showEasterEgg = true" @login="showLogin = true" @add="openAdd" @logout="logout" />
     <main>
-      <LeaderboardView v-if="view === 'leaderboard'" :players="players" :changes="changes" :loading="loading" :error="error" :lang="lang" :is-admin="isAdmin" @edit="openEdit" @delete="removePlayer" @retry="loadData" />
+      <LeaderboardView v-if="view === 'leaderboard'" :players="players" :changes="changes" :loading="loading" :error="error" :lang="lang" :is-admin="isAdmin" :player-id="playerId" @edit="openEdit" @delete="removePlayer" @retry="loadLeaderboard(true)" @open-player="id => router.push({name: routeName('player'), params: {id}})" @close-player="router.push({name: routeName('leaderboard')})" />
       <EventsView v-else-if="view === 'events'" :lang="lang" :events="events" :is-admin="isAdmin" @changed="reloadEvents" />
       <AboutView v-else :lang="lang" :is-admin="isAdmin" @leaderboard="navigate('leaderboard')" @events="navigate('events')" @login="showLogin = true" @logout="logout" />
     </main>
-    <transition name="toast"><div v-if="notice" class="toast" @click="notice = ''">{{ notice }}</div></transition>
+    <transition name="toast"><div v-if="notice" class="toast" role="status" aria-live="polite" @click="notice = ''">{{ notice }}</div></transition>
     <div v-if="showEasterEgg" class="easter-backdrop">
-      <section class="easter-card" role="dialog" aria-modal="true" :aria-label="lang === 'en' ? 'SMLT easter egg' : 'Пасхалка SMLT'">
+      <section class="easter-card" role="dialog" aria-modal="true" :aria-label="lang === 'en' ? 'SMLT easter egg' : 'Пасхалка SMLT'" @keydown.esc="showEasterEgg = false">
         <button class="modal-close" :aria-label="lang === 'en' ? 'Close' : 'Закрыть'" @click="showEasterEgg = false">×</button>
         <div class="easter-mark" aria-hidden="true">⚡</div>
         <p class="eyebrow">{{ lang === 'en' ? 'SMLT SECRET MODE' : 'СЕКРЕТНЫЙ РЕЖИМ SMLT' }}</p>

@@ -1,7 +1,8 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { api } from '../api'
 import { countryMeta } from '../data'
+import { useDialog } from '../useDialog'
 
 const props = defineProps({player: Object, lang: String, players: Array})
 const emit = defineEmits(['close'])
@@ -19,6 +20,7 @@ const levelsLoading = ref(false)
 const levelsError = ref('')
 const profileId = computed(() => Number(records.value?.id || props.player.gdlId) || 0)
 const requestTimeout = 8000
+const dialogRef = useDialog(() => emit('close'))
 
 const sections = computed(() => {
   const l = records.value?.levels
@@ -72,28 +74,17 @@ async function load() {
 }
 watch(() => props.player, load, {immediate: true})
 
-function onKeydown(event) {
-  if (event.key === 'Escape') emit('close')
-}
-onMounted(() => {
-  window.addEventListener('keydown', onKeydown)
-  document.body.style.overflow = 'hidden'
-})
-onBeforeUnmount(() => {
-  window.removeEventListener('keydown', onKeydown)
-  document.body.style.overflow = ''
-})
 </script>
 
 <template>
   <div class="modal-backdrop" @click.self="$emit('close')">
-    <section class="modal player-details-modal" role="dialog" aria-modal="true">
-      <button class="modal-close" @click="$emit('close')">×</button>
+    <section ref="dialogRef" class="modal player-details-modal" role="dialog" aria-modal="true" aria-labelledby="player-details-title">
+      <button class="modal-close" :aria-label="lang === 'en' ? 'Close' : 'Закрыть'" @click="$emit('close')">×</button>
       <div class="pdetails-hero">
         <img v-if="countryMeta(player.country, lang).flagSrc" class="pdetails-flag" :src="countryMeta(player.country, lang).flagSrc" :alt="countryMeta(player.country, lang).name"><span v-else class="pdetails-flag">{{ countryMeta(player.country, lang).flag }}</span>
         <div>
           <p class="eyebrow">{{ lang === 'en' ? 'SMLT PLAYER' : 'ИГРОК SMLT' }}</p>
-          <h2 class="pdetails-name">{{ player.name }}</h2>
+          <h2 id="player-details-title" class="pdetails-name">{{ player.name }}</h2>
           <p class="pdetails-country">{{ countryMeta(player.country, lang).name }} · #{{ player.globalRank || '—' }} {{ lang === 'en' ? 'world' : 'в мире' }}</p>
         </div>
       </div>

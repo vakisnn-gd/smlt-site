@@ -15,6 +15,7 @@ import (
 func main() {
 	godotenv.Load()
 	loadConfig()
+	initDiscordNotifier()
 	initCaptchaWords()
 	initDB()
 	defer db.Close()
@@ -38,7 +39,7 @@ func main() {
 			serveSitemap(w, r)
 			return
 		}
-		if r.URL.Path == "/players" || strings.HasPrefix(r.URL.Path, "/player/") {
+		if r.URL.Path == "/players" {
 			http.NotFound(w, r)
 			return
 		}
@@ -53,12 +54,14 @@ func main() {
 				fs.ServeHTTP(w, r)
 				return
 			}
-			if r.URL.Path != "/events" && r.URL.Path != "/about" {
+			if !isAppPath(r.URL.Path) {
 				http.NotFound(w, r)
 				return
 			}
 		}
-		http.ServeFile(w, r, filepath.Join(frontendDir, "index.html"))
+		if !serveAppPage(w, r, frontendDir) {
+			http.NotFound(w, r)
+		}
 	})
 
 	sec := func(h http.HandlerFunc) http.HandlerFunc {
@@ -70,7 +73,7 @@ func main() {
 	http.HandleFunc("/api/recent-changes", sec(methodCheck("GET", handleRecentChanges)))
 	http.HandleFunc("/api/events", sec(bodyLimitMiddleware(handleEventsCollection)))
 	http.HandleFunc("/api/events/", sec(authMiddleware(handleEventByMethod)))
-	http.HandleFunc("/api/session", sec(methodCheck("GET", authMiddleware(handleSession))))
+	http.HandleFunc("/api/session", sec(methodCheck("GET", handleSession)))
 	http.HandleFunc("/api/logout", sec(methodCheck("POST", handleLogout)))
 	http.HandleFunc("/api/captcha", sec(methodCheck("GET", rateLimitMiddleware("captcha", 60, handleGetCaptcha))))
 	http.HandleFunc("/api/captcha/image/", sec(methodCheck("GET", handleCaptchaImage)))

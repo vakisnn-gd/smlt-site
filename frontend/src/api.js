@@ -18,6 +18,7 @@ export const api = {
   changes: () => request(`/api/recent-changes?fresh=${Date.now()}`),
   events: () => request(`/api/events?fresh=${Date.now()}`),
   addEvent: event => request('/api/events', {method: 'POST', body: JSON.stringify(event)}),
+  updateEventStatus: (id, status) => request(`/api/events/${id}`, {method: 'PUT', body: JSON.stringify({status})}),
   deleteEvent: id => request(`/api/events/${id}`, {method: 'DELETE'}),
   reorderEvents: ids => request('/api/events', {method: 'PUT', body: JSON.stringify({ids})}),
   session: () => request('/api/session'),

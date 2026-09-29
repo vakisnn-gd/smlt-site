@@ -7,6 +7,6 @@ export default defineConfig({
   build: {
     outDir: '../frontend-build',
     emptyOutDir: true,
-    sourcemap: true,
+    sourcemap: false,
   },
 })

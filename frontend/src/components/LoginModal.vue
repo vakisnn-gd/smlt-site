@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { api } from '../api'
+import { useDialog } from '../useDialog'
 
 const props = defineProps({lang: String})
 const emit = defineEmits(['close', 'authenticated'])
@@ -9,6 +10,7 @@ const password = ref('')
 const answer = ref('')
 const error = ref('')
 const loading = ref(false)
+const dialogRef = useDialog(() => emit('close'))
 
 async function refreshCaptcha() {
   error.value = ''
@@ -34,13 +36,13 @@ onMounted(refreshCaptcha)
 
 <template>
   <div class="modal-backdrop" @mousedown.self="$emit('close')">
-    <section class="modal small-modal" role="dialog" aria-modal="true">
-      <button class="modal-close" @click="$emit('close')">×</button>
-      <p class="eyebrow">{{ lang === 'en' ? 'SMLT CONTROL' : 'УПРАВЛЕНИЕ SMLT' }}</p><h2>{{ lang === 'en' ? 'Admin access' : 'Вход администратора' }}</h2><p class="modal-subtitle">{{ lang === 'en' ? 'Enter the server password and solve the captcha.' : 'Введите пароль сервера и решите капчу.' }}</p>
+    <section ref="dialogRef" class="modal small-modal" role="dialog" aria-modal="true" aria-labelledby="login-title">
+      <button class="modal-close" :aria-label="lang === 'en' ? 'Close' : 'Закрыть'" @click="$emit('close')">×</button>
+      <p class="eyebrow">{{ lang === 'en' ? 'SMLT CONTROL' : 'УПРАВЛЕНИЕ SMLT' }}</p><h2 id="login-title">{{ lang === 'en' ? 'Admin access' : 'Вход администратора' }}</h2><p class="modal-subtitle">{{ lang === 'en' ? 'Enter the server password and solve the captcha.' : 'Введите пароль сервера и решите капчу.' }}</p>
       <form @submit.prevent="submit">
         <label>{{ lang === 'en' ? 'Password' : 'Пароль' }}<input v-model="password" type="password" autocomplete="current-password" required></label>
         <label>{{ lang === 'en' ? 'Captcha' : 'Капча' }}
-          <div class="captcha-row"><div class="captcha-frame"><img v-if="captcha" :src="captcha.imageUrl" alt="Captcha"><span v-else class="mini-loader"></span></div><button type="button" class="refresh-button" @click="refreshCaptcha">↻</button></div>
+          <div class="captcha-row"><div class="captcha-frame"><img v-if="captcha" :src="captcha.imageUrl" alt="Captcha"><span v-else class="mini-loader"></span></div><button type="button" class="refresh-button" :aria-label="lang === 'en' ? 'Refresh captcha' : 'Обновить капчу'" @click="refreshCaptcha">↻</button></div>
         </label>
         <label>{{ lang === 'en' ? 'Answer' : 'Ответ' }}<input v-model="answer" autocomplete="off" required></label>
         <p v-if="error" class="form-error">{{ error }}</p>

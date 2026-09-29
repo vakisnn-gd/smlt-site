@@ -2,12 +2,14 @@
 import { reactive, ref } from 'vue'
 import { api } from '../api'
 import { countries } from '../data'
+import { useDialog } from '../useDialog'
 
 const props = defineProps({lang: String, player: Object})
 const emit = defineEmits(['close', 'saved', 'unauthorized'])
 const form = reactive(props.player ? {...props.player} : {name: '', country: 'OTHER', points: 0, demon: '—', globalRank: 0})
 const saving = ref(false)
 const error = ref('')
+const dialogRef = useDialog(() => emit('close'))
 
 async function save() {
   saving.value = true
@@ -30,9 +32,9 @@ async function save() {
 
 <template>
   <div class="modal-backdrop" @mousedown.self="$emit('close')">
-    <section class="modal player-modal" role="dialog" aria-modal="true">
-      <button class="modal-close" @click="$emit('close')">×</button>
-      <p class="eyebrow">{{ player ? 'EDIT PLAYER' : 'DEMONLIST' }}</p><h2>{{ player ? (lang === 'en' ? 'Edit player' : 'Изменить игрока') : (lang === 'en' ? 'Add player' : 'Добавить игрока') }}</h2>
+    <section ref="dialogRef" class="modal player-modal" role="dialog" aria-modal="true" aria-labelledby="player-modal-title">
+      <button class="modal-close" :aria-label="lang === 'en' ? 'Close' : 'Закрыть'" @click="$emit('close')">×</button>
+      <p class="eyebrow">{{ player ? 'EDIT PLAYER' : 'DEMONLIST' }}</p><h2 id="player-modal-title">{{ player ? (lang === 'en' ? 'Edit player' : 'Изменить игрока') : (lang === 'en' ? 'Add player' : 'Добавить игрока') }}</h2>
       <form @submit.prevent="save">
         <p v-if="!player" class="modal-subtitle">{{ lang === 'en' ? 'Enter a Demonlist nickname. The rest will be filled in automatically.' : 'Введите ник из Demonlist — остальное сайт заполнит сам.' }}</p>
         <label>{{ lang === 'en' ? 'Nickname' : 'Никнейм' }}<input v-model="form.name" maxlength="30" required autofocus></label>

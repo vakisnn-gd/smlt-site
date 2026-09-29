@@ -113,12 +113,19 @@ func syncDemonlistPlayers() {
 		updates = append(updates, item.update)
 	}
 
+	// Record and publish newly completed demons first. Rank changes from the
+	// same synchronization cycle are emitted afterwards, matching the site feed.
+	syncPlayerDemons(players)
+
 	changed, err := dbApplyStandingUpdates(updates)
 	if err != nil {
 		log.Printf("[DEMONLIST SYNC] update: %v", err)
 		return
 	}
 	log.Printf("[DEMONLIST SYNC] matched=%d changed=%d failed=%d", len(updates), changed, failed)
+	if recent, err := dbGetRecentRankChanges(20); err == nil {
+		notifyRankChanges(recent)
+	}
 }
 
 func fetchDemonlistUser(name string) (demonlistUser, error) {
@@ -271,13 +278,14 @@ func recordRankChange(executor sqlExecutor, playerID int, before, after []Player
 		}
 	}
 	passedJSON, _ := json.Marshal(passed)
-	_, err := executor.Exec(`INSERT INTO rank_changes (player_name, old_rank, new_rank, above_player, below_player, passed_players)
-		VALUES ($1,$2,$3,$4,$5,$6::jsonb)`, newPlayer.Name, oldPlayer.Rank, newPlayer.Rank, above, below, string(passedJSON))
+	_, err := executor.Exec(`INSERT INTO rank_changes (player_name, old_rank, new_rank, above_player, below_player, passed_players, country)
+		VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7)`, newPlayer.Name, oldPlayer.Rank, newPlayer.Rank, above, below, string(passedJSON), newPlayer.Country)
 	return err
 }
 
 func dbGetRecentRankChanges(limit int) ([]RankChange, error) {
-	rows, err := db.Query(`SELECT id, player_name, old_rank, new_rank, above_player, below_player, passed_players, created_at
+	rows, err := db.Query(`SELECT id, player_name, old_rank, new_rank, above_player, below_player, passed_players,
+		COALESCE(NULLIF(country, ''), (SELECT p.country FROM players p WHERE lower(p.name)=lower(rank_changes.player_name)), 'OTHER'), created_at
 		FROM rank_changes ORDER BY created_at DESC, id DESC LIMIT $1`, limit)
 	if err != nil {
 		return nil, err
@@ -287,7 +295,7 @@ func dbGetRecentRankChanges(limit int) ([]RankChange, error) {
 	for rows.Next() {
 		var change RankChange
 		var passedJSON []byte
-		if err := rows.Scan(&change.ID, &change.PlayerName, &change.OldRank, &change.NewRank, &change.AbovePlayer, &change.BelowPlayer, &passedJSON, &change.CreatedAt); err != nil {
+		if err := rows.Scan(&change.ID, &change.PlayerName, &change.OldRank, &change.NewRank, &change.AbovePlayer, &change.BelowPlayer, &passedJSON, &change.Country, &change.CreatedAt); err != nil {
 			return nil, err
 		}
 		_ = json.Unmarshal(passedJSON, &change.PassedPlayers)
@@ -297,4 +305,21 @@ func dbGetRecentRankChanges(limit int) ([]RankChange, error) {
 		changes = append(changes, change)
 	}
 	return changes, rows.Err()
+}
+
+func dbGetRecentPlayerEvents(limit int) ([]PlayerEvent, error) {
+	rows, err := db.Query("SELECT id, event_type, player_name, country, detail, created_at FROM player_events ORDER BY created_at DESC, id DESC LIMIT $1", limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var events []PlayerEvent
+	for rows.Next() {
+		var e PlayerEvent
+		if err := rows.Scan(&e.ID, &e.EventType, &e.PlayerName, &e.Country, &e.Detail, &e.CreatedAt); err != nil {
+			return nil, err
+		}
+		events = append(events, e)
+	}
+	return events, rows.Err()
 }
