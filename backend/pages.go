@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"html"
 	"net/http"
@@ -67,7 +68,7 @@ func serveAppPage(w http.ResponseWriter, r *http.Request, frontendDir string) bo
 		if isEnglish {
 			meta.description = "SMLT community leaderboard and player achievements."
 		}
-		content = fmt.Sprintf(`<main class="page"><h1>%s</h1><p>#%d SMLT · %.2f · #%d</p><p>%s</p></main>`, html.EscapeString(player.Name), player.Rank, player.Points, player.GlobalRank, html.EscapeString(player.Demon))
+		content = fmt.Sprintf(`<main class="page"><h1>%s</h1><p>%s <strong>%s</strong> · #%d SMLT · %.2f points · global rank #%d</p><p>Hardest demon: <strong>%s</strong></p><p><a href="https://demonlist.org/profile/%d">Demonlist profile</a></p></main>`, html.EscapeString(serverCountryFlag(player.Country)), html.EscapeString(player.Country), html.EscapeString(player.Name), player.Rank, player.Points, player.GlobalRank, html.EscapeString(player.Demon), player.GDLID)
 	}
 
 	index, err := os.ReadFile(filepath.Join(frontendDir, "index.html"))
@@ -94,10 +95,54 @@ func serveAppPage(w http.ResponseWriter, r *http.Request, frontendDir string) bo
 	page = replaceAttribute(page, `link rel="alternate" hreflang="en" href="`, "https://smlt.lol"+enPath)
 	page = replaceAttribute(page, `link rel="alternate" hreflang="x-default" href="`, "https://smlt.lol"+ruPath)
 	page = strings.Replace(page, `<div id="app"></div>`, `<div id="app">`+content+`</div>`, 1)
+	page = addJSONLD(page, meta, pagePath, isEnglish)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-cache")
 	_, _ = w.Write([]byte(page))
 	return true
+}
+
+func addJSONLD(page string, meta pageMeta, pagePath string, english bool) string {
+	type structuredPage struct {
+		Context     string `json:"@context"`
+		Type        string `json:"@type"`
+		Name        string `json:"name"`
+		URL         string `json:"url"`
+		Description string `json:"description,omitempty"`
+	}
+	type website struct {
+		Context     string `json:"@context"`
+		Type        string `json:"@type"`
+		Name        string `json:"name"`
+		URL         string `json:"url"`
+		Description string `json:"description"`
+	}
+	var raw []byte
+	if strings.HasPrefix(pagePath, "/player/") {
+		id, _ := strconv.ParseInt(strings.TrimPrefix(pagePath, "/player/"), 10, 64)
+		player, ok := findPublicPlayer(id)
+		if ok {
+			type person struct {
+				Context     string `json:"@context"`
+				Type        string `json:"@type"`
+				Name        string `json:"name"`
+				URL         string `json:"url"`
+				Nationality string `json:"nationality"`
+				Description string `json:"description"`
+			}
+			raw, _ = json.Marshal(person{"https://schema.org", "Person", player.Name, meta.canonical, player.Country, fmt.Sprintf("SMLT player with %.2f points and global rank #%d", player.Points, player.GlobalRank)})
+		}
+	}
+	if raw == nil && pagePath == "/" {
+		raw, _ = json.Marshal(website{"https://schema.org", "WebSite", "SMLT", "https://smlt.lol/", meta.description})
+	} else {
+		name := meta.title
+		if english {
+			name = meta.title
+		}
+		raw, _ = json.Marshal(structuredPage{"https://schema.org", "WebPage", name, meta.canonical, meta.description})
+	}
+	return strings.Replace(page, "</head>", `<script type="application/ld+json">`+string(raw)+`</script></head>`, 1)
 }
 
 func replaceMeta(page, start, end, value string) string {
@@ -143,6 +188,29 @@ func findPublicPlayer(publicID int64) (Player, bool) {
 	return Player{}, false
 }
 
+func serverCountryFlag(code string) string {
+	code = strings.ToUpper(strings.TrimSpace(code))
+	if len(code) != 2 {
+		return "🌐"
+	}
+	return string(rune(code[0]-'A')+0x1F1E6) + string(rune(code[1]-'A')+0x1F1E6)
+}
+
+func eventStatusLabel(status string, english bool) string {
+	labels := map[string][2]string{
+		"ready-verify": {"готов и верифнут", "ready and verified"}, "ready": {"готов", "ready"},
+		"in-progress": {"в процессе", "in progress"}, "planned": {"планируется", "planned"},
+		"dead": {"мёртв", "dead"}, "frozen": {"заморожен", "frozen"},
+	}
+	if label, ok := labels[status]; ok {
+		if english {
+			return label[1]
+		}
+		return label[0]
+	}
+	return status
+}
+
 func renderLeaderboardFallback(english bool) string {
 	players, err := dbGetPlayers()
 	if err != nil {
@@ -159,9 +227,41 @@ func renderLeaderboardFallback(english bool) string {
 		if id == 0 {
 			id = int64(player.ID)
 		}
-		fmt.Fprintf(&out, `<li><a href="%s/player/%d">%s</a> — %.2f</li>`, prefix, id, html.EscapeString(player.Name), player.Points)
+		fmt.Fprintf(&out, `<li>%s <a href="%s/player/%d">%s</a> — %.2f points · #%d · hardest: %s</li>`, html.EscapeString(serverCountryFlag(player.Country)), prefix, id, html.EscapeString(player.Name), player.Points, player.GlobalRank, html.EscapeString(player.Demon))
 	}
-	out.WriteString(`</ol></main>`)
+	out.WriteString(`</ol>`)
+	if changes, err := dbGetRecentRankChanges(20); err == nil {
+		out.WriteString(`<section><h2>`)
+		if english {
+			out.WriteString(`Recent changes`)
+		} else {
+			out.WriteString(`Недавние изменения`)
+		}
+		out.WriteString(`</h2><ul>`)
+		for _, change := range changes {
+			fmt.Fprintf(&out, `<li>%s <strong>%s</strong> moved from #%d to #%d</li>`, html.EscapeString(serverCountryFlag(change.Country)), html.EscapeString(change.PlayerName), change.OldRank, change.NewRank)
+		}
+		out.WriteString(`</ul></section>`)
+	}
+	if events, err := dbGetRecentPlayerEvents(20); err == nil {
+		out.WriteString(`<section><h2>`)
+		if english {
+			out.WriteString(`Player achievements`)
+		} else {
+			out.WriteString(`Достижения игроков`)
+		}
+		out.WriteString(`</h2><ul>`)
+		for _, event := range events {
+			fmt.Fprintf(&out, `<li>%s <strong>%s</strong> — %s%s</li>`, html.EscapeString(serverCountryFlag(event.Country)), html.EscapeString(event.PlayerName), html.EscapeString(event.EventType), func() string {
+				if event.Detail != "" {
+					return ": " + html.EscapeString(event.Detail)
+				}
+				return ""
+			}())
+		}
+		out.WriteString(`</ul></section>`)
+	}
+	out.WriteString(`</main>`)
 	return out.String()
 }
 
@@ -177,10 +277,15 @@ func renderEventsFallback(english bool) string {
 	var out strings.Builder
 	out.WriteString(`<main class="page events-page"><h1>` + title + `</h1><ul>`)
 	for _, event := range events {
-		fmt.Fprintf(&out, `<li>%s</li>`, html.EscapeString(event.Title))
+		video := "https://www.youtube.com/watch?v=" + urlQueryEscape(event.VideoID)
+		fmt.Fprintf(&out, `<li><strong>%s</strong> — %s · %s · <a href="%s">YouTube</a></li>`, html.EscapeString(event.Title), html.EscapeString(event.Category), html.EscapeString(eventStatusLabel(event.Status, english)), video)
 	}
 	out.WriteString(`</ul></main>`)
 	return out.String()
+}
+
+func urlQueryEscape(value string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(value, "&", "&amp;"), "\"", "&quot;")
 }
 
 func isAppPath(requestPath string) bool {
