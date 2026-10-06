@@ -49,13 +49,22 @@ type cachedDemonlistResponse struct {
 	expires time.Time
 }
 
-const demonlistCacheTTL = 5 * time.Minute
+const demonlistCacheTTL = time.Minute
 
 func cachedDemonlistGet(key string) ([]byte, bool) {
 	demonlistCacheMu.Lock()
 	defer demonlistCacheMu.Unlock()
 	item, ok := demonlistCache[key]
 	if !ok || time.Now().After(item.expires) {
+		return nil, false
+	}
+	return append([]byte(nil), item.body...), true
+}
+func cachedDemonlistGetStale(key string) ([]byte, bool) {
+	demonlistCacheMu.Lock()
+	defer demonlistCacheMu.Unlock()
+	item, ok := demonlistCache[key]
+	if !ok {
 		return nil, false
 	}
 	return append([]byte(nil), item.body...), true
@@ -135,20 +144,28 @@ func handleSearchDemonlist(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		resp, err := demonlistClient.Do(req)
 		if err != nil {
-			writeDemonlistError(w, http.StatusBadGateway, "Не удалось подключиться к demonlist.org")
-			return
+			body, ok = cachedDemonlistGetStale("search:" + strings.ToLower(name))
+			if !ok {
+				writeDemonlistError(w, http.StatusBadGateway, "Не удалось подключиться к demonlist.org")
+				return
+			}
+		} else {
+			defer resp.Body.Close()
+			if resp.StatusCode != http.StatusOK {
+				body, ok = cachedDemonlistGetStale("search:" + strings.ToLower(name))
+				if !ok {
+					writeDemonlistError(w, http.StatusBadGateway, "Demonlist API недоступен")
+					return
+				}
+			} else {
+				body, err = io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+				if err != nil {
+					writeDemonlistError(w, http.StatusBadGateway, "Ошибка чтения ответа")
+					return
+				}
+				cachedDemonlistPut("search:"+strings.ToLower(name), body)
+			}
 		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			writeDemonlistError(w, http.StatusBadGateway, "Demonlist API недоступен")
-			return
-		}
-		body, err = io.ReadAll(io.LimitReader(resp.Body, 1<<20))
-		if err != nil {
-			writeDemonlistError(w, http.StatusBadGateway, "Ошибка чтения ответа")
-			return
-		}
-		cachedDemonlistPut("search:"+strings.ToLower(name), body)
 	}
 	if len(body) == 0 {
 		w.Header().Set("Content-Type", "application/json")

@@ -48,10 +48,19 @@ func notifyPlayerEvent(eventKey, text string) {
 		return
 	}
 	key := eventKey + "\x00" + text
+	claimed, err := dbClaimDiscordNotification(key)
+	if err != nil {
+		log.Printf("[DISCORD] dedupe: %v", err)
+		return
+	}
+	if !claimed {
+		return
+	}
 	if _, loaded := discordSent.LoadOrStore(key, struct{}{}); loaded {
 		return
 	}
 	if err := discordBot.send(text); err != nil {
+		dbReleaseDiscordNotification(key)
 		discordSent.Delete(key)
 		log.Printf("[DISCORD] notification: %v", err)
 	}
@@ -108,10 +117,19 @@ func notifyRankChanges(changes []RankChange) {
 			msg += ", обойдя " + strings.Join(passed, ", ")
 		}
 		key := "rank\x00" + msg
+		claimed, err := dbClaimDiscordNotification(key)
+		if err != nil {
+			log.Printf("[DISCORD] dedupe: %v", err)
+			continue
+		}
+		if !claimed {
+			continue
+		}
 		if _, loaded := discordSent.LoadOrStore(key, struct{}{}); loaded {
 			continue
 		}
 		if err := discordBot.send(msg); err != nil {
+			dbReleaseDiscordNotification(key)
 			discordSent.Delete(key)
 			log.Printf("[DISCORD] rank update: %v", err)
 		}

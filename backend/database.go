@@ -141,6 +141,11 @@ func initDB() {
 		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 	);
 	CREATE INDEX IF NOT EXISTS idx_events_order ON events(sort_order, id);
+	CREATE TABLE IF NOT EXISTS discord_notifications (
+		notification_key TEXT PRIMARY KEY,
+		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	);
+	CREATE INDEX IF NOT EXISTS idx_discord_notifications_time ON discord_notifications(created_at);
 	ALTER TABLE events ADD COLUMN IF NOT EXISTS status VARCHAR(24) NOT NULL DEFAULT 'planned';
 	`
 	if _, err := db.Exec(schema); err != nil {
@@ -261,7 +266,7 @@ func dbReorderEvents(ids []int) error {
 }
 
 func dbGetPlayers() ([]Player, error) {
-	rows, err := db.Query("SELECT id, rank_order, country, name, points, demon, global_rank, COALESCE(demonlist_id, 0) FROM players ORDER BY points DESC, name ASC")
+	rows, err := db.Query("SELECT id, rank_order, country, name, points, demon, global_rank, COALESCE(demonlist_id, 0), updated_at FROM players ORDER BY points DESC, name ASC")
 	if err != nil {
 		return nil, err
 	}
@@ -270,12 +275,30 @@ func dbGetPlayers() ([]Player, error) {
 	var players []Player
 	for rows.Next() {
 		var p Player
-		if err := rows.Scan(&p.ID, &p.Rank, &p.Country, &p.Name, &p.Points, &p.Demon, &p.GlobalRank, &p.GDLID); err != nil {
+		if err := rows.Scan(&p.ID, &p.Rank, &p.Country, &p.Name, &p.Points, &p.Demon, &p.GlobalRank, &p.GDLID, &p.UpdatedAt); err != nil {
 			continue
 		}
 		players = append(players, p)
 	}
 	return players, rows.Err()
+}
+
+func dbClaimDiscordNotification(key string) (bool, error) {
+	if db == nil {
+		return true, nil
+	}
+	var inserted bool
+	err := db.QueryRow(`INSERT INTO discord_notifications(notification_key) VALUES ($1) ON CONFLICT DO NOTHING RETURNING true`, key).Scan(&inserted)
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	return inserted, err
+}
+
+func dbReleaseDiscordNotification(key string) {
+	if db != nil {
+		_, _ = db.Exec("DELETE FROM discord_notifications WHERE notification_key=$1", key)
+	}
 }
 
 // refreshRanks recomputes rank_order from the points ordering so the exposed
