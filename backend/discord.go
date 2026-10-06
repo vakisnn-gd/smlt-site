@@ -4,6 +4,8 @@ package main
 // so the website does not need a second long-running gateway process.
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -32,6 +34,14 @@ var discordBot *discordNotifier
 var discordSent sync.Map
 var discordStartedAt = time.Now()
 
+func discordNotificationKey(eventKey, text string) string {
+	h := sha256.New()
+	_, _ = h.Write([]byte(eventKey))
+	_, _ = h.Write([]byte{0})
+	_, _ = h.Write([]byte(text))
+	return hex.EncodeToString(h.Sum(nil))
+}
+
 func initDiscordNotifier() {
 	discordOnce.Do(func() {
 		discordBot = newDiscordNotifier()
@@ -47,7 +57,7 @@ func notifyPlayerEvent(eventKey, text string) {
 	if discordBot == nil {
 		return
 	}
-	key := eventKey + "\x00" + text
+	key := discordNotificationKey(eventKey, text)
 	claimed, err := dbClaimDiscordNotification(key)
 	if err != nil {
 		log.Printf("[DISCORD] dedupe: %v", err)
@@ -116,7 +126,7 @@ func notifyRankChanges(changes []RankChange) {
 			}
 			msg += ", обойдя " + strings.Join(passed, ", ")
 		}
-		key := "rank\x00" + msg
+		key := discordNotificationKey("rank", msg)
 		claimed, err := dbClaimDiscordNotification(key)
 		if err != nil {
 			log.Printf("[DISCORD] dedupe: %v", err)
