@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -38,6 +39,32 @@ func demonlistCountryCode(country string) string {
 }
 
 var demonlistClient = &http.Client{Timeout: 10 * time.Second}
+var demonlistCacheMu sync.Mutex
+var demonlistCache = map[string]cachedDemonlistResponse{}
+var searchRateMu sync.Mutex
+var searchRate = map[string]time.Time{}
+
+type cachedDemonlistResponse struct {
+	body    []byte
+	expires time.Time
+}
+
+const demonlistCacheTTL = 5 * time.Minute
+
+func cachedDemonlistGet(key string) ([]byte, bool) {
+	demonlistCacheMu.Lock()
+	defer demonlistCacheMu.Unlock()
+	item, ok := demonlistCache[key]
+	if !ok || time.Now().After(item.expires) {
+		return nil, false
+	}
+	return append([]byte(nil), item.body...), true
+}
+func cachedDemonlistPut(key string, body []byte) {
+	demonlistCacheMu.Lock()
+	defer demonlistCacheMu.Unlock()
+	demonlistCache[key] = cachedDemonlistResponse{body: append([]byte(nil), body...), expires: time.Now().Add(demonlistCacheTTL)}
+}
 
 type demonlistDetail struct {
 	Data struct {
@@ -73,6 +100,22 @@ type demonlistDetail struct {
 }
 
 func handleSearchDemonlist(w http.ResponseWriter, r *http.Request) {
+	ip := r.Header.Get("X-Forwarded-For")
+	if i := strings.IndexByte(ip, ','); i >= 0 {
+		ip = ip[:i]
+	}
+	if ip == "" {
+		ip = r.RemoteAddr
+	}
+	searchRateMu.Lock()
+	last := searchRate[ip]
+	if time.Since(last) < time.Second {
+		searchRateMu.Unlock()
+		writeDemonlistError(w, http.StatusTooManyRequests, "Слишком много запросов")
+		return
+	}
+	searchRate[ip] = time.Now()
+	searchRateMu.Unlock()
 	name := strings.TrimSpace(r.URL.Query().Get("name"))
 	if name == "" {
 		w.Header().Set("Content-Type", "application/json")
@@ -88,25 +131,28 @@ func handleSearchDemonlist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req.Header.Set("User-Agent", "SMLT-Leaderboard/1.0")
-
-	resp, err := demonlistClient.Do(req)
-	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Не удалось подключиться к demonlist.org"})
-		return
+	body, ok := cachedDemonlistGet("search:" + strings.ToLower(name))
+	if !ok {
+		resp, err := demonlistClient.Do(req)
+		if err != nil {
+			writeDemonlistError(w, http.StatusBadGateway, "Не удалось подключиться к demonlist.org")
+			return
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			writeDemonlistError(w, http.StatusBadGateway, "Demonlist API недоступен")
+			return
+		}
+		body, err = io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+		if err != nil {
+			writeDemonlistError(w, http.StatusBadGateway, "Ошибка чтения ответа")
+			return
+		}
+		cachedDemonlistPut("search:"+strings.ToLower(name), body)
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
+	if len(body) == 0 {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Игрок не найден на demonlist.org"})
-		return
-	}
-
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
-	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Ошибка чтения ответа"})
+		json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Пустой ответ demonlist.org"})
 		return
 	}
 
@@ -279,6 +325,13 @@ func handlePlayerLevels(w http.ResponseWriter, r *http.Request) {
 		}
 		id = strconv.FormatInt(found.ID, 10)
 	}
+	cacheKey := "levels:" + id
+	if cached, ok := cachedDemonlistGet(cacheKey); ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "private, max-age=300")
+		_, _ = w.Write(cached)
+		return
+	}
 
 	req, err := http.NewRequest("GET", demonlistApiBase+"/user/get?id="+url.QueryEscape(id), nil)
 	if err != nil {
@@ -330,12 +383,16 @@ func handlePlayerLevels(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("[DEMONLIST] Levels for %s (place #%d)", parsed.Data.Username, parsed.Data.Placement)
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	result := map[string]interface{}{
 		"success":   true,
 		"id":        id,
 		"username":  parsed.Data.Username,
 		"placement": parsed.Data.Placement,
 		"levels":    parsed.Data.Levels,
-	})
+	}
+	encoded, _ := json.Marshal(result)
+	cachedDemonlistPut(cacheKey, encoded)
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "private, max-age=300")
+	_, _ = w.Write(encoded)
 }

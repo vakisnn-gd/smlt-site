@@ -134,7 +134,16 @@ func addJSONLD(page string, meta pageMeta, pagePath string, english bool) string
 		}
 	}
 	if raw == nil && pagePath == "/" {
-		raw, _ = json.Marshal(website{"https://schema.org", "WebSite", "SMLT", "https://smlt.lol/", meta.description})
+		players, _ := dbGetPlayers()
+		items := make([]map[string]interface{}, 0, len(players))
+		for i, player := range players {
+			id := player.GDLID
+			if id == 0 {
+				id = int64(player.ID)
+			}
+			items = append(items, map[string]interface{}{"@type": "ListItem", "position": i + 1, "name": player.Name, "url": fmt.Sprintf("https://smlt.lol/player/%d", id)})
+		}
+		raw, _ = json.Marshal(map[string]interface{}{"@context": "https://schema.org", "@type": "ItemList", "name": "SMLT Leaderboard", "url": "https://smlt.lol/", "itemListElement": items})
 	} else {
 		name := meta.title
 		if english {
