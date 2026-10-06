@@ -27,6 +27,7 @@ type demonlistUser struct {
 	Username  string `json:"username"`
 	Placement int    `json:"placement"`
 	Points    string `json:"points"`
+	Country   string `json:"country"`
 }
 
 type demonlistUserResponse struct {

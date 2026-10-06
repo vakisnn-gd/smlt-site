@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -13,22 +12,32 @@ import (
 	"time"
 )
 
-const demonlistBase = "https://pointercrate.com/api/v1"
 const demonlistApiBase = "https://api.demonlist.org"
 
-var demonlistClient = &http.Client{Timeout: 10 * time.Second}
-
-type demonlistRanking struct {
-	ID          int     `json:"id"`
-	Name        string  `json:"name"`
-	Banned      bool    `json:"banned"`
-	Score       float64 `json:"score"`
-	Rank        int     `json:"rank"`
-	Nationality *struct {
-		CountryCode string `json:"country_code"`
-		Nation      string `json:"nation"`
-	} `json:"nationality"`
+func demonlistCountryCode(country string) string {
+	switch strings.ToLower(strings.TrimSpace(country)) {
+	case "russia":
+		return "RU"
+	case "ukraine":
+		return "UA"
+	case "serbia":
+		return "RS"
+	case "belarus":
+		return "BY"
+	case "bulgaria":
+		return "BG"
+	case "germany":
+		return "DE"
+	case "armenia":
+		return "AM"
+	case "kazakhstan":
+		return "KZ"
+	default:
+		return "OTHER"
+	}
 }
+
+var demonlistClient = &http.Client{Timeout: 10 * time.Second}
 
 type demonlistDetail struct {
 	Data struct {
@@ -72,7 +81,7 @@ func handleSearchDemonlist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req, err := http.NewRequest("GET", demonlistBase+"/players/ranking/?name_contains="+url.QueryEscape(name)+"&limit=5", nil)
+	req, err := http.NewRequest("GET", demonlistUsersURL+"?limit=5&search="+url.QueryEscape(name), nil)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Ошибка запроса"})
@@ -101,57 +110,50 @@ func handleSearchDemonlist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var rankings []demonlistRanking
-	if err := json.Unmarshal(body, &rankings); err != nil || len(rankings) == 0 {
+	var search demonlistUserResponse
+	if err := json.Unmarshal(body, &search); err != nil || len(search.Data.Users) == 0 {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Игрок не найден на demonlist.org"})
 		return
 	}
 
-	best := rankings[0]
-	for _, p := range rankings {
-		if p.Banned {
-			continue
-		}
-		if strings.EqualFold(p.Name, name) {
-			best = p
+	found := search.Data.Users[0]
+	for _, user := range search.Data.Users {
+		if strings.EqualFold(user.Username, name) {
+			found = user
 			break
 		}
 	}
-	if best.Banned {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Игрок забанен на demonlist.org"})
-		return
-	}
+	points, _ := strconv.ParseFloat(found.Points, 64)
 
-	detailReq, err := http.NewRequest("GET", fmt.Sprintf("%s/players/%d/", demonlistBase, best.ID), nil)
+	detailReq, err := http.NewRequest("GET", demonlistApiBase+"/user/get?id="+strconv.FormatInt(found.ID, 10), nil)
 	if err != nil {
-		sendDemonlistResult(w, best, "")
+		writeDemonlistError(w, http.StatusInternalServerError, "Ошибка запроса")
 		return
 	}
 	detailReq.Header.Set("User-Agent", "SMLT-Leaderboard/1.0")
 
 	detailResp, err := demonlistClient.Do(detailReq)
 	if err != nil {
-		sendDemonlistResult(w, best, "")
+		writeDemonlistError(w, http.StatusBadGateway, "Не удалось подключиться к demonlist.org")
 		return
 	}
 	defer detailResp.Body.Close()
 
 	if detailResp.StatusCode != 200 {
-		sendDemonlistResult(w, best, "")
+		writeDemonlistError(w, http.StatusBadGateway, "Некорректный ответ demonlist.org")
 		return
 	}
 
 	detailBody, err := io.ReadAll(io.LimitReader(detailResp.Body, 4<<20))
 	if err != nil {
-		sendDemonlistResult(w, best, "")
+		writeDemonlistError(w, http.StatusBadGateway, "Ошибка чтения ответа")
 		return
 	}
 
 	var detail demonlistDetail
 	if err := json.Unmarshal(detailBody, &detail); err != nil {
-		sendDemonlistResult(w, best, "")
+		writeDemonlistError(w, http.StatusBadGateway, "Некорректный ответ demonlist.org")
 		return
 	}
 
@@ -188,22 +190,25 @@ func handleSearchDemonlist(w http.ResponseWriter, r *http.Request) {
 		hardestDemon = completed[0].Name
 	}
 
-	country := ""
-	if best.Nationality != nil {
-		country = best.Nationality.CountryCode
-	}
+	country := demonlistCountryCode(found.Country)
 
-	log.Printf("[DEMONLIST] Found: %s (rank #%d, score %.0f)", best.Name, best.Rank, best.Score)
+	log.Printf("[DEMONLIST] Found: %s (rank #%d, score %.2f)", found.Username, found.Placement, points)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success":    true,
-		"name":       best.Name,
+		"name":       found.Username,
 		"country":    country,
-		"points":     best.Score,
+		"points":     points,
 		"demon":      hardestDemon,
-		"globalRank": best.Rank,
+		"globalRank": found.Placement,
 	})
+}
+
+func writeDemonlistError(w http.ResponseWriter, status int, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": message})
 }
 
 type demonlistLevel struct {
@@ -214,13 +219,13 @@ type demonlistLevel struct {
 }
 
 type demonlistLevels struct {
-	Hardest  *demonlistLevel  `json:"hardest"`
-	Main     []demonlistLevel `json:"main"`
-	Extended []demonlistLevel `json:"extended"`
-	Advanced []demonlistLevel `json:"advanced"`
+	Hardest   *demonlistLevel  `json:"hardest"`
+	Main      []demonlistLevel `json:"main"`
+	Extended  []demonlistLevel `json:"extended"`
+	Advanced  []demonlistLevel `json:"advanced"`
 	Unbounded []demonlistLevel `json:"unbounded"`
-	Progress []demonlistLevel `json:"progress"`
-	Verified []demonlistLevel `json:"verified"`
+	Progress  []demonlistLevel `json:"progress"`
+	Verified  []demonlistLevel `json:"verified"`
 }
 
 func handlePlayerLevels(w http.ResponseWriter, r *http.Request) {
@@ -332,21 +337,5 @@ func handlePlayerLevels(w http.ResponseWriter, r *http.Request) {
 		"username":  parsed.Data.Username,
 		"placement": parsed.Data.Placement,
 		"levels":    parsed.Data.Levels,
-	})
-}
-
-func sendDemonlistResult(w http.ResponseWriter, p demonlistRanking, demon string) {
-	country := ""
-	if p.Nationality != nil {
-		country = p.Nationality.CountryCode
-	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"success":    true,
-		"name":       p.Name,
-		"country":    country,
-		"points":     p.Score,
-		"demon":      demon,
-		"globalRank": p.Rank,
 	})
 }
