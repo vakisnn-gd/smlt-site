@@ -251,6 +251,18 @@ func dbDeleteEvent(id int) error {
 	return nil
 }
 
+func dbDeletePlayerEvent(id int64) error {
+	res, err := db.Exec("DELETE FROM player_events WHERE id=$1", id)
+	if err != nil {
+		return err
+	}
+	count, _ := res.RowsAffected()
+	if count == 0 {
+		return fmt.Errorf("запись не найдена")
+	}
+	return nil
+}
+
 func dbReorderEvents(ids []int) error {
 	tx, err := db.Begin()
 	if err != nil {

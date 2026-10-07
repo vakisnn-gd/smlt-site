@@ -106,8 +106,10 @@ img.flag { width: 26px; height: 18px; border-radius: 3px; object-fit: cover; box
 .change-scroll { max-height: 400px; margin-top: 8px; overflow: auto; scrollbar-color: #36414f transparent; }
 .date-divider { display: flex; align-items: center; gap: 12px; margin: 17px 0 3px; color: #6785b4; font-size: 10px; font-weight: 800; letter-spacing: .13em; }
 .date-divider::before, .date-divider::after { content: ''; flex: 1; height: 1px; background: var(--line); }
-.change-row { display: grid; grid-template-columns: 25px 1fr; gap: 12px; padding: 13px 8px; border-bottom: 1px solid rgba(255,255,255,.045); }
+.change-row { display: grid; grid-template-columns: 25px minmax(0, 1fr) auto; gap: 12px; padding: 13px 8px; border-bottom: 1px solid rgba(255,255,255,.045); }
 .change-row:last-child { border-bottom: 0; }
+.change-delete { align-self: start; width: 28px; height: 28px; border: 1px solid transparent; border-radius: 7px; color: #8d98a6; background: transparent; font-size: 20px; line-height: 1; cursor: pointer; }
+.change-delete:hover { color: #ff8984; border-color: rgba(255,137,132,.35); background: rgba(255,137,132,.08); }
 .change-arrow { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; color: var(--green); background: rgba(54,211,145,.12); font-size: 13px; font-weight: 900; }
 .change-row p { margin: 0; color: #c5cdd7; line-height: 1.5; }
 .change-row .change-date { margin: 0 0 3px; color: #6f7b89; font-size: 11px; font-weight: 600; letter-spacing: .04em; }

@@ -5,7 +5,7 @@ import RecentChanges from './RecentChanges.vue'
 import PlayerDetailsView from './PlayerDetailsView.vue'
 
 const props = defineProps({players: Array, changes: Array, loading: Boolean, error: String, lang: String, isAdmin: Boolean, playerId: String})
-const emit = defineEmits(['edit', 'delete', 'retry', 'open-player', 'close-player'])
+const emit = defineEmits(['edit', 'delete', 'delete-change', 'retry', 'open-player', 'close-player'])
 const search = ref('')
 const country = ref('ALL')
 const spinPlayer = ref(null)
@@ -78,7 +78,7 @@ async function spinSMLT() {
           </template>
         </section>
 
-        <RecentChanges :changes="changes" :players="players" :lang="lang" />
+        <RecentChanges :changes="changes" :players="players" :lang="lang" :is-admin="isAdmin" @delete="emit('delete-change', $event)" />
       </div>
 
       <aside class="panel countries-sidebar">

@@ -158,6 +158,20 @@ async function removePlayer(player) {
   }
 }
 
+async function removeChange(change) {
+  if (!change?.eventType) return
+  const message = lang.value === 'en' ? 'Delete this history entry?' : 'Удалить эту запись из истории?'
+  if (!confirm(message)) return
+  try {
+    await api.deletePlayerEvent(change.id)
+    notice.value = lang.value === 'en' ? 'History entry deleted' : 'Запись удалена из истории'
+    await loadLeaderboard(true)
+  } catch (err) {
+    notice.value = err.message
+    if (err.status === 401) isAdmin.value = false
+  }
+}
+
 async function savedPlayer() {
   showPlayerModal.value = false
   notice.value = lang.value === 'en' ? 'Leaderboard updated' : 'Рейтинг обновлён'
@@ -197,7 +211,7 @@ watch(players, updatePageMeta)
   <div class="app-shell">
     <AppHeader :view="view" :lang="lang" :is-admin="isAdmin" :rough-mode="roughMode" @navigate="navigate" @language="toggleLanguage" @style="toggleStyle" @easter-egg="showEasterEgg = true" @login="showLogin = true" @add="openAdd" @logout="logout" />
     <main>
-      <LeaderboardView v-if="view === 'leaderboard'" :players="players" :changes="changes" :loading="loading" :error="error" :lang="lang" :is-admin="isAdmin" :player-id="playerId" @edit="openEdit" @delete="removePlayer" @retry="loadLeaderboard(true)" @open-player="id => router.push({name: routeName('player'), params: {id}})" @close-player="router.push({name: routeName('leaderboard')})" />
+      <LeaderboardView v-if="view === 'leaderboard'" :players="players" :changes="changes" :loading="loading" :error="error" :lang="lang" :is-admin="isAdmin" :player-id="playerId" @edit="openEdit" @delete="removePlayer" @delete-change="removeChange" @retry="loadLeaderboard(true)" @open-player="id => router.push({name: routeName('player'), params: {id}})" @close-player="router.push({name: routeName('leaderboard')})" />
       <EventsView v-else-if="view === 'events'" :lang="lang" :events="events" :is-admin="isAdmin" @changed="reloadEvents" />
       <AboutView v-else :lang="lang" :is-admin="isAdmin" @leaderboard="navigate('leaderboard')" @events="navigate('events')" @login="showLogin = true" @logout="logout" />
     </main>

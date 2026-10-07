@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -181,6 +182,25 @@ func handleRecentChanges(w http.ResponseWriter, r *http.Request) {
 	sort.SliceStable(feed, func(i, j int) bool { return changeCreatedAt(feed[i]).After(changeCreatedAt(feed[j])) })
 	w.Header().Set("Cache-Control", "no-store")
 	json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "changes": feed})
+}
+
+func handlePlayerEventByMethod(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(strings.TrimPrefix(r.URL.Path, "/api/player-events/"), 10, 64)
+	if err != nil || id < 1 {
+		http.Error(w, `{"success":false,"message":"Неверный идентификатор"}`, http.StatusBadRequest)
+		return
+	}
+	if r.Method != http.MethodDelete {
+		w.Header().Set("Allow", http.MethodDelete)
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	if err := dbDeletePlayerEvent(id); err != nil {
+		http.Error(w, `{"success":false,"message":"Запись не найдена"}`, http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{"success": true})
 }
 
 func changeCreatedAt(v interface{}) time.Time {

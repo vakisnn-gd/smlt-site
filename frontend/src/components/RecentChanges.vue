@@ -2,7 +2,8 @@
 import { computed } from 'vue'
 import { flagSrc } from '../data'
 
-const props = defineProps({changes: {type: Array, default: () => []}, players: {type: Array, default: () => []}, lang: String})
+const props = defineProps({changes: {type: Array, default: () => []}, players: {type: Array, default: () => []}, lang: String, isAdmin: Boolean})
+const emit = defineEmits(['delete'])
 
 const playerMap = computed(() => new Map(props.players.map(player => [player.name.toLowerCase(), player])))
 
@@ -70,6 +71,7 @@ const grouped = computed(() => {
             </p>
             <small v-if="change.abovePlayer && change.belowPlayer">{{ lang === 'en' ? 'Now between' : 'Теперь между' }} <span>{{ change.abovePlayer }}</span> {{ lang === 'en' ? 'and' : 'и' }} <span>{{ change.belowPlayer }}</span></small>
           </div>
+          <button v-if="isAdmin && change.eventType" class="change-delete" type="button" :title="lang === 'en' ? 'Delete history entry' : 'Удалить запись из истории'" :aria-label="lang === 'en' ? 'Delete history entry' : 'Удалить запись из истории'" @click.stop="emit('delete', change)">×</button>
         </article>
       </template>
     </div>

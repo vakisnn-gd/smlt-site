@@ -71,6 +71,7 @@ func main() {
 	http.HandleFunc("/api/players", sec(bodyLimitMiddleware(handlePlayersCollection)))
 	http.HandleFunc("/api/players/", sec(bodyLimitMiddleware(authMiddleware(handlePlayerByMethod))))
 	http.HandleFunc("/api/recent-changes", sec(methodCheck("GET", handleRecentChanges)))
+	http.HandleFunc("/api/player-events/", sec(authMiddleware(handlePlayerEventByMethod)))
 	http.HandleFunc("/api/events", sec(bodyLimitMiddleware(handleEventsCollection)))
 	http.HandleFunc("/api/events/", sec(authMiddleware(handleEventByMethod)))
 	http.HandleFunc("/api/session", sec(methodCheck("GET", handleSession)))
