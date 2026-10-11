@@ -682,3 +682,58 @@ html[data-style="rough"] .easter-mark { border-color: #fff; color: #fff; backgro
   .setting-row { align-items: flex-start; flex-wrap: wrap; }
   .setting-row .secondary-button, .setting-row .primary-button, .install-hint { margin-left: auto; }
 }
+
+/* Keep hover states readable when the background is light. */
+html[data-theme="light"]:not([data-style="rough"]) .style-toggle,
+html[data-theme="light"]:not([data-style="rough"]) .row-actions button,
+html[data-theme="light"]:not([data-style="rough"]) .refresh-button,
+html[data-theme="light"]:not([data-style="rough"]) .input-action button {
+  color: var(--muted);
+  border-color: var(--line);
+  background: var(--surface-2);
+}
+html[data-theme="light"]:not([data-style="rough"]) .style-toggle:hover,
+html[data-theme="light"]:not([data-style="rough"]) .row-actions button:hover,
+html[data-theme="light"]:not([data-style="rough"]) .refresh-button:hover,
+html[data-theme="light"]:not([data-style="rough"]) .input-action button:hover {
+  color: var(--text);
+  border-color: var(--line-bright);
+  background: var(--surface-3);
+}
+html[data-theme="light"]:not([data-style="rough"]) .social-link:hover,
+html[data-theme="light"]:not([data-style="rough"]) .community-links button:hover {
+  color: var(--text);
+  border-color: var(--line-bright);
+  background: var(--surface-3);
+}
+html[data-theme="light"]:not([data-style="rough"]) .event-order:hover:not(:disabled) {
+  color: var(--text) !important;
+  background: var(--surface-3) !important;
+}
+html[data-theme="light"]:not([data-style="rough"]) .primary-nav {
+  background: rgba(255,255,255,.96);
+}
+
+html[data-style="rough"][data-theme="light"] .player-row:hover,
+html[data-style="rough"][data-theme="light"] .country-list button:hover,
+html[data-style="rough"][data-theme="light"] .community-links button:hover,
+html[data-style="rough"][data-theme="light"] .event-order:hover:not(:disabled) {
+  color: #111;
+  border-color: #111;
+  background: #e1e1dd !important;
+}
+html[data-style="rough"][data-theme="light"] .video-tabs button:hover,
+html[data-style="rough"][data-theme="light"] .video-tabs button.active {
+  color: #111;
+  border-color: #111;
+  background: #e1e1dd;
+}
+html[data-style="rough"][data-theme="light"] .primary-button:hover {
+  color: #111;
+  background: #e1e1dd;
+}
+html[data-style="rough"][data-theme="light"] .social-link:hover {
+  color: #111;
+  border-color: #111;
+  background: #e1e1dd;
+}
