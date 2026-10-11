@@ -27,8 +27,8 @@ const sections = computed(() => {
   if (!l) return []
   const defs = [
     {key: 'main', label: 'Main'},
-    {key: 'advanced', label: 'Advanced'},
     {key: 'extended', label: 'Extended'},
+    {key: 'advanced', label: 'Advanced'},
     {key: 'unbounded', label: 'Unbounded'},
     {key: 'progress', label: props.lang === 'en' ? 'In progress' : 'В процессе'},
     {key: 'verified', label: 'Verified'},
