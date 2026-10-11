@@ -46,10 +46,9 @@ function clearComparison() {
 
 <template>
   <div class="page tools-page">
-    <header class="page-heading tools-heading">
-      <p class="eyebrow">{{ lang === 'en' ? 'SMLT TOOLBOX' : 'ИНСТРУМЕНТЫ SMLT' }}</p>
-      <h1>{{ lang === 'en' ? 'Tools' : 'Инструменты' }}</h1>
-      <span>{{ lang === 'en' ? 'Compare players, roll the leaderboard and tune the site.' : 'Сравнивайте игроков, крутите рейтинг и настраивайте сайт.' }}</span>
+    <header class="tools-intro">
+      <div><p class="eyebrow">{{ lang === 'en' ? 'SMLT TOOLBOX' : 'ИНСТРУМЕНТЫ SMLT' }}</p><h1>{{ lang === 'en' ? 'Tools' : 'Инструменты' }}</h1><p>{{ lang === 'en' ? 'Compare players, roll the leaderboard and tune the site.' : 'Сравнивайте игроков, крутите рейтинг и настраивайте сайт.' }}</p></div>
+      <span class="tools-intro-mark" aria-hidden="true">✦</span>
     </header>
 
     <section class="tool-card comparison-tool">
