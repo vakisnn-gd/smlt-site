@@ -17,6 +17,9 @@ const loading = ref(true)
 const error = ref('')
 const lang = ref(location.pathname === '/en' || location.pathname.startsWith('/en/') ? 'en' : 'ru')
 const roughMode = ref(localStorage.getItem('smlt-style') === 'rough')
+const themeMode = ref(localStorage.getItem('smlt-theme') === 'light' ? 'light' : 'dark')
+const canInstall = ref(false)
+let installPrompt = null
 setRoughFlags(roughMode.value)
 const isAdmin = ref(false)
 const showLogin = ref(false)
@@ -37,15 +40,40 @@ function routeName(name, language = lang.value) {
 
 function applyStyle() {
   document.documentElement.dataset.style = roughMode.value ? 'rough' : 'classic'
+  document.documentElement.dataset.theme = themeMode.value
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', themeMode.value === 'light' ? '#f3f6fa' : '#0b0d10')
 }
 
 applyStyle()
 
 function toggleStyle() {
   roughMode.value = !roughMode.value
+  if (roughMode.value && themeMode.value === 'light') {
+    themeMode.value = 'dark'
+    localStorage.setItem('smlt-theme', themeMode.value)
+  }
   localStorage.setItem('smlt-style', roughMode.value ? 'rough' : 'classic')
   setRoughFlags(roughMode.value)
   applyStyle()
+}
+
+function toggleTheme() {
+  themeMode.value = themeMode.value === 'light' ? 'dark' : 'light'
+  if (themeMode.value === 'light' && roughMode.value) {
+    roughMode.value = false
+    localStorage.setItem('smlt-style', 'classic')
+    setRoughFlags(false)
+  }
+  localStorage.setItem('smlt-theme', themeMode.value)
+  applyStyle()
+}
+
+async function installApp() {
+  if (!installPrompt) return
+  installPrompt.prompt()
+  await installPrompt.userChoice
+  installPrompt = null
+  canInstall.value = false
 }
 
 function updatePageMeta() {
@@ -196,6 +224,16 @@ onMounted(() => {
   updatePageMeta()
   loadRouteData()
   checkSession()
+
+  window.addEventListener('beforeinstallprompt', event => {
+    event.preventDefault()
+    installPrompt = event
+    canInstall.value = true
+  })
+  window.addEventListener('appinstalled', () => {
+    installPrompt = null
+    canInstall.value = false
+  })
 })
 
 watch(() => route.fullPath, () => {
@@ -209,7 +247,7 @@ watch(players, updatePageMeta)
 
 <template>
   <div class="app-shell">
-    <AppHeader :view="view" :lang="lang" :is-admin="isAdmin" :rough-mode="roughMode" @navigate="navigate" @language="toggleLanguage" @style="toggleStyle" @easter-egg="showEasterEgg = true" @login="showLogin = true" @add="openAdd" @logout="logout" />
+    <AppHeader :view="view" :lang="lang" :is-admin="isAdmin" :rough-mode="roughMode" :theme-mode="themeMode" :can-install="canInstall" @navigate="navigate" @language="toggleLanguage" @style="toggleStyle" @theme="toggleTheme" @install="installApp" @easter-egg="showEasterEgg = true" @login="showLogin = true" @add="openAdd" @logout="logout" />
     <main>
       <LeaderboardView v-if="view === 'leaderboard'" :players="players" :changes="changes" :loading="loading" :error="error" :lang="lang" :is-admin="isAdmin" :player-id="playerId" @edit="openEdit" @delete="removePlayer" @delete-change="removeChange" @retry="loadLeaderboard(true)" @open-player="id => router.push({name: routeName('player'), params: {id}})" @close-player="router.push({name: routeName('leaderboard')})" />
       <EventsView v-else-if="view === 'events'" :lang="lang" :events="events" :is-admin="isAdmin" @changed="reloadEvents" />
