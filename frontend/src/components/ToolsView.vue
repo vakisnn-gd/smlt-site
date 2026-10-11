@@ -48,7 +48,6 @@ function clearComparison() {
   <div class="page tools-page">
     <header class="tools-intro">
       <div><p class="eyebrow">{{ lang === 'en' ? 'SMLT TOOLBOX' : 'ИНСТРУМЕНТЫ SMLT' }}</p><h1>{{ lang === 'en' ? 'Tools' : 'Инструменты' }}</h1><p>{{ lang === 'en' ? 'Compare players, roll the leaderboard and tune the site.' : 'Сравнивайте игроков, крутите рейтинг и настраивайте сайт.' }}</p></div>
-      <span class="tools-intro-mark" aria-hidden="true">✦</span>
     </header>
 
     <section class="tool-card comparison-tool">
@@ -78,10 +77,10 @@ function clearComparison() {
       </section>
 
       <section class="tool-card">
-        <div class="tool-card-heading"><div><p class="eyebrow">{{ lang === 'en' ? 'SITE SETTINGS' : 'НАСТРОЙКИ САЙТА' }}</p><h2>{{ lang === 'en' ? 'Make it yours' : 'Настроить под себя' }}</h2></div><span class="tool-icon" aria-hidden="true">✦</span></div>
-        <div class="setting-row"><div><strong>{{ lang === 'en' ? 'Theme' : 'Тема' }}</strong><span>{{ themeMode === 'light' ? (lang === 'en' ? 'White' : 'Белая') : (lang === 'en' ? 'Dark' : 'Тёмная') }}</span></div><button class="secondary-button" type="button" @click="emit('theme')">{{ themeMode === 'light' ? '☾' : '☀' }} {{ themeMode === 'light' ? (lang === 'en' ? 'Dark' : 'Тёмная') : (lang === 'en' ? 'White' : 'Белая') }}</button></div>
-        <div class="setting-row"><div><strong>{{ lang === 'en' ? 'Style' : 'Стиль' }}</strong><span>{{ roughMode ? (lang === 'en' ? 'Playful' : 'Рофл') : (lang === 'en' ? 'Clean' : 'Обычный') }}</span></div><button class="secondary-button" type="button" @click="emit('style')">{{ roughMode ? '✎' : '✦' }} {{ roughMode ? (lang === 'en' ? 'Clean' : 'Обычный') : (lang === 'en' ? 'Playful' : 'Рофл') }}</button></div>
-        <div class="setting-row install-row"><div><strong>{{ lang === 'en' ? 'App' : 'Приложение' }}</strong><span>{{ lang === 'en' ? 'Install SMLT on your device' : 'Установить SMLT на устройство' }}</span></div><button v-if="canInstall" class="primary-button" type="button" @click="emit('install')">⇩ {{ lang === 'en' ? 'Install' : 'Установить' }}</button><span v-else class="install-hint">{{ lang === 'en' ? 'Use the browser menu' : 'Через меню браузера' }}</span></div>
+        <div class="tool-card-heading"><div><p class="eyebrow">{{ lang === 'en' ? 'SITE SETTINGS' : 'НАСТРОЙКИ САЙТА' }}</p><h2>{{ lang === 'en' ? 'Make it yours' : 'Настроить под себя' }}</h2></div></div>
+        <div class="setting-row"><div><strong>{{ lang === 'en' ? 'Theme' : 'Тема' }}</strong><span>{{ themeMode === 'light' ? (lang === 'en' ? 'White' : 'Белая') : (lang === 'en' ? 'Dark' : 'Тёмная') }}</span></div><button class="secondary-button" type="button" @click="emit('theme')">{{ themeMode === 'light' ? (lang === 'en' ? 'Dark' : 'Тёмная') : (lang === 'en' ? 'White' : 'Белая') }}</button></div>
+        <div class="setting-row"><div><strong>{{ lang === 'en' ? 'Style' : 'Стиль' }}</strong><span>{{ roughMode ? (lang === 'en' ? 'Playful' : 'Рофл') : (lang === 'en' ? 'Clean' : 'Обычный') }}</span></div><button class="secondary-button" type="button" @click="emit('style')">{{ roughMode ? (lang === 'en' ? 'Clean' : 'Обычный') : (lang === 'en' ? 'Playful' : 'Рофл') }}</button></div>
+        <div class="setting-row install-row"><div><strong>{{ lang === 'en' ? 'App' : 'Приложение' }}</strong><span>{{ lang === 'en' ? 'Install SMLT on your device' : 'Установить SMLT на устройство' }}</span></div><button v-if="canInstall" class="primary-button" type="button" @click="emit('install')">{{ lang === 'en' ? 'Install' : 'Установить' }}</button><span v-else class="install-hint">{{ lang === 'en' ? 'Use the browser menu' : 'Через меню браузера' }}</span></div>
       </section>
     </div>
   </div>
