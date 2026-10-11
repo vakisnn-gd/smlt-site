@@ -1,8 +1,8 @@
 <script setup>
 import { onBeforeUnmount, ref } from 'vue'
 
-defineProps({view: String, lang: String, isAdmin: Boolean, roughMode: Boolean, themeMode: String, canInstall: Boolean})
-const emit = defineEmits(['navigate', 'language', 'style', 'theme', 'install', 'add', 'logout', 'easter-egg'])
+defineProps({view: String, lang: String, isAdmin: Boolean, roughMode: Boolean})
+const emit = defineEmits(['navigate', 'language', 'add', 'logout', 'easter-egg'])
 const menuOpen = ref(false)
 const brandClicks = ref(0)
 let brandClickTimer
@@ -34,13 +34,11 @@ onBeforeUnmount(() => clearTimeout(brandClickTimer))
       <button class="brand" @click="brandClick"><img class="brand-favicon" :src="roughMode ? '/avatars/smlt-rough.webp' : '/favicon2.ico'" alt=""><strong>SMLT</strong></button>
       <nav :class="['primary-nav', {open: menuOpen}]" :aria-label="lang === 'en' ? 'Main navigation' : 'Основная навигация'" @keydown.esc="menuOpen = false">
         <button :class="{active: view === 'leaderboard'}" :aria-current="view === 'leaderboard' ? 'page' : undefined" @click="go('leaderboard')">{{ lang === 'en' ? 'Leaderboard' : 'Рейтинг' }}</button>
+        <button :class="{active: view === 'tools'}" :aria-current="view === 'tools' ? 'page' : undefined" @click="go('tools')">{{ lang === 'en' ? 'Tools' : 'Инструменты' }}</button>
         <button :class="{active: view === 'events'}" :aria-current="view === 'events' ? 'page' : undefined" @click="go('events')">{{ lang === 'en' ? 'Events' : 'Ивенты' }}</button>
         <button :class="{active: view === 'about'}" :aria-current="view === 'about' ? 'page' : undefined" @click="go('about')">{{ lang === 'en' ? 'About' : 'О SMLT' }}</button>
       </nav>
       <div class="nav-actions">
-        <button class="style-toggle" :class="{active: roughMode}" :aria-pressed="roughMode" :title="roughMode ? (lang === 'en' ? 'Switch to clean style' : 'Вернуть обычный стиль') : (lang === 'en' ? 'Turn on playful style' : 'Включить рофляный стиль')" @click="$emit('style')"><span aria-hidden="true">{{ roughMode ? '✎' : '✦' }}</span><span class="style-toggle-label">{{ roughMode ? (lang === 'en' ? 'Playful' : 'Рофл') : (lang === 'en' ? 'Clean' : 'Обычный') }}</span></button>
-        <button class="theme-toggle" :aria-pressed="themeMode === 'light'" :title="themeMode === 'light' ? (lang === 'en' ? 'Switch to dark theme' : 'Включить тёмную тему') : (lang === 'en' ? 'Switch to light theme' : 'Включить белую тему')" @click="$emit('theme')"><span aria-hidden="true">{{ themeMode === 'light' ? '☾' : '☀' }}</span><span class="theme-toggle-label">{{ themeMode === 'light' ? (lang === 'en' ? 'Dark' : 'Тёмная') : (lang === 'en' ? 'Light' : 'Белая') }}</span></button>
-        <button v-if="canInstall" class="install-button" :title="lang === 'en' ? 'Install SMLT' : 'Установить SMLT'" @click="$emit('install')"><span aria-hidden="true">⇩</span><span class="install-label">{{ lang === 'en' ? 'Install' : 'Установить' }}</span></button>
         <button class="lang-button" @click="$emit('language')">{{ lang === 'en' ? 'RU' : 'EN' }}</button>
         <template v-if="isAdmin">
           <button class="icon-button add-button" :title="lang === 'en' ? 'Add player' : 'Добавить игрока'" @click="$emit('add')">＋</button>

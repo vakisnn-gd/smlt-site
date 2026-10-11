@@ -8,11 +8,6 @@ const props = defineProps({players: Array, changes: Array, loading: Boolean, err
 const emit = defineEmits(['edit', 'delete', 'delete-change', 'retry', 'open-player', 'close-player'])
 const search = ref('')
 const country = ref('ALL')
-const spinPlayer = ref(null)
-const spinRolling = ref(false)
-const compareMode = ref(false)
-const compareIds = ref([])
-const compareMessage = ref('')
 
 const sorted = computed(() => [...(props.players || [])].sort((a, b) => Number(b.points) - Number(a.points) || a.name.localeCompare(b.name)))
 const visible = computed(() => sorted.value.filter(player => {
@@ -28,39 +23,6 @@ const countryStats = computed(() => {
   return [...counts.entries()].sort((a, b) => (a[0] === 'OTHER') - (b[0] === 'OTHER') || b[1] - a[1])
 })
 const selected = computed(() => props.playerId ? sorted.value.find(player => String(player.gdlId || player.id) === props.playerId) || null : null)
-const comparePlayers = computed(() => compareIds.value.map(id => sorted.value.find(player => player.id === id)).filter(Boolean))
-
-function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)) }
-
-async function spinSMLT() {
-  if (!sorted.value.length || spinRolling.value) return
-  spinRolling.value = true
-  for (let i = 0; i < 12; i += 1) {
-    spinPlayer.value = sorted.value[Math.floor(Math.random() * sorted.value.length)]
-    await wait(55 + i * 9)
-  }
-  spinRolling.value = false
-}
-
-function toggleCompareMode() {
-  compareMode.value = !compareMode.value
-  compareMessage.value = ''
-  if (!compareMode.value) compareIds.value = []
-}
-
-function toggleComparePlayer(player) {
-  compareMessage.value = ''
-  const index = compareIds.value.indexOf(player.id)
-  if (index >= 0) {
-    compareIds.value.splice(index, 1)
-    return
-  }
-  if (compareIds.value.length >= 2) {
-    compareMessage.value = props.lang === 'en' ? 'Choose no more than two players.' : 'Можно выбрать не больше двух игроков.'
-    return
-  }
-  compareIds.value.push(player.id)
-}
 </script>
 
 <template>
@@ -70,7 +32,7 @@ function toggleComparePlayer(player) {
       <div class="leaderboard-col">
         <section class="leaderboard-card">
           <div class="leaderboard-toolbar">
-            <div class="section-kicker"><strong>{{ lang === 'en' ? 'Top players' : 'Топ игроков' }}</strong><button class="spin-button" :disabled="spinRolling || !sorted.length" @click="spinSMLT"><span aria-hidden="true">🎲</span>{{ spinRolling ? (lang === 'en' ? 'Rolling…' : 'Крутим…') : (lang === 'en' ? 'Spin SMLT' : 'Крутить SMLT') }}</button><button class="compare-button" :class="{active: compareMode}" @click="toggleCompareMode"><span aria-hidden="true">⇄</span>{{ compareMode ? (lang === 'en' ? 'Close compare' : 'Закрыть сравнение') : (lang === 'en' ? 'Compare' : 'Сравнить') }}</button></div>
+            <div class="section-kicker"><strong>{{ lang === 'en' ? 'Top players' : 'Топ игроков' }}</strong></div>
             <div class="filters">
               <label class="search-box"><span>⌕</span><input v-model="search" type="search" autocomplete="off" :placeholder="lang === 'en' ? 'Search player…' : 'Поиск игрока…'"></label>
               <label class="select-box"><span class="sr-only">{{ lang === 'en' ? 'Country' : 'Страна' }}</span><select v-model="country"><option value="ALL">{{ lang === 'en' ? 'All countries' : 'Все страны' }}</option><option v-for="code in countries" :key="code" :value="code">{{ countryMeta(code, lang).name }}</option></select></label>
@@ -83,12 +45,6 @@ function toggleComparePlayer(player) {
             <div class="stat accent"><strong>{{ total.toFixed(2) }}</strong><small>{{ lang === 'en' ? 'Total points' : 'Общее количество очков' }}</small></div>
           </div>
 
-          <div v-if="compareMode" class="compare-toolbar">
-            <span>{{ lang === 'en' ? 'Select two players in the table' : 'Выберите двух игроков в таблице' }}</span>
-            <strong>{{ comparePlayers.length }} / 2</strong>
-            <small v-if="compareMessage" class="compare-message">{{ compareMessage }}</small>
-          </div>
-
           <div v-if="loading" class="large-state"><span class="loader"></span><p>{{ lang === 'en' ? 'Loading leaderboard…' : 'Загружаем рейтинг…' }}</p></div>
           <div v-else-if="error" class="large-state error-state"><p>{{ error }}</p><button class="primary-button" @click="$emit('retry')">{{ lang === 'en' ? 'Try again' : 'Повторить' }}</button></div>
           <template v-else>
@@ -97,7 +53,7 @@ function toggleComparePlayer(player) {
               <article v-for="player in visible" :key="player.id" :class="['player-row', {'top-three': player.rank <= 3}]">
                 <span class="rank">{{ player.rank }}</span>
                 <img v-if="countryMeta(player.country, lang).flagSrc" class="flag" :src="countryMeta(player.country, lang).flagSrc" :alt="countryMeta(player.country, lang).name" :title="countryMeta(player.country, lang).name"><span v-else class="flag" :title="countryMeta(player.country, lang).name">{{ countryMeta(player.country, lang).flag }}</span>
-                <div class="player-cell"><div class="player-name-line"><button class="player-name-button" @click.stop="emit('open-player', player.gdlId || player.id)">{{ player.name }}</button><button v-if="compareMode" class="compare-select" :class="{selected: compareIds.includes(player.id)}" type="button" :aria-pressed="compareIds.includes(player.id)" :title="compareIds.includes(player.id) ? (lang === 'en' ? 'Remove from comparison' : 'Убрать из сравнения') : (lang === 'en' ? 'Add to comparison' : 'Добавить к сравнению')" @click.stop="toggleComparePlayer(player)">{{ compareIds.includes(player.id) ? '✓' : '+' }}</button></div><small class="mobile-demon">{{ player.demon }}</small></div>
+                <div class="player-cell"><button class="player-name-button" @click.stop="emit('open-player', player.gdlId || player.id)">{{ player.name }}</button><small class="mobile-demon">{{ player.demon }}</small></div>
                 <strong class="points">{{ Number(player.points).toFixed(2) }}</strong>
                 <span class="demon">{{ player.demon || '—' }}</span>
                 <span class="global-rank">#{{ player.globalRank || '—' }}</span>
@@ -105,13 +61,6 @@ function toggleComparePlayer(player) {
               </article>
               <p v-if="!visible.length" class="no-results">{{ lang === 'en' ? 'No players found' : 'Игроки не найдены' }}</p>
             </div>
-            <section v-if="comparePlayers.length === 2" class="compare-panel" aria-live="polite">
-              <div class="compare-heading"><div><p class="eyebrow">{{ lang === 'en' ? 'PLAYER COMPARISON' : 'СРАВНЕНИЕ ИГРОКОВ' }}</p><h2>{{ comparePlayers[0].name }} <span>×</span> {{ comparePlayers[1].name }}</h2></div><button class="secondary-button" type="button" @click="compareIds = []">{{ lang === 'en' ? 'Clear' : 'Очистить' }}</button></div>
-              <div class="compare-grid">
-                <article v-for="player in comparePlayers" :key="player.id" class="compare-card"><strong>{{ player.name }}</strong><span>{{ countryMeta(player.country, lang).name }}</span><dl><div><dt>{{ lang === 'en' ? 'SMLT rank' : 'Место SMLT' }}</dt><dd>#{{ player.rank }}</dd></div><div><dt>{{ lang === 'en' ? 'Points' : 'Очки' }}</dt><dd>{{ Number(player.points).toFixed(2) }}</dd></div><div><dt>{{ lang === 'en' ? 'World rank' : 'Мировой ранг' }}</dt><dd>#{{ player.globalRank || '—' }}</dd></div><div><dt>{{ lang === 'en' ? 'Hardest demon' : 'Хардест' }}</dt><dd>{{ player.demon || '—' }}</dd></div></dl></article>
-              </div>
-              <p class="compare-result">{{ lang === 'en' ? 'Difference in points' : 'Разница в очках' }}: <strong>{{ Math.abs(Number(comparePlayers[0].points) - Number(comparePlayers[1].points)).toFixed(2) }}</strong> · {{ lang === 'en' ? 'rank places' : 'мест по SMLT' }}: <strong>{{ Math.abs(Number(comparePlayers[0].rank) - Number(comparePlayers[1].rank)) }}</strong></p>
-            </section>
           </template>
         </section>
 
@@ -125,16 +74,5 @@ function toggleComparePlayer(player) {
     </div>
 
     <PlayerDetailsView v-if="selected" :player="selected" :players="sorted" :lang="lang" @close="emit('close-player')" />
-    <div v-if="spinPlayer" class="spin-backdrop" @click.self="spinPlayer = null">
-      <section class="spin-card" role="dialog" aria-modal="true" :aria-label="lang === 'en' ? 'SMLT random player' : 'Случайный игрок SMLT'">
-        <button class="modal-close" :aria-label="lang === 'en' ? 'Close' : 'Закрыть'" @click="spinPlayer = null">×</button>
-        <p class="eyebrow">{{ lang === 'en' ? 'SMLT RANDOMIZER' : 'СЛУЧАЙНЫЙ ИГРОК SMLT' }}</p>
-        <div class="spin-die" aria-hidden="true">{{ spinRolling ? '🎲' : '✦' }}</div>
-        <h2>{{ spinPlayer.name }}</h2>
-        <p class="spin-country"><img v-if="countryMeta(spinPlayer.country, lang).flagSrc" class="flag" :src="countryMeta(spinPlayer.country, lang).flagSrc" alt=""><span v-else>{{ countryMeta(spinPlayer.country, lang).flag }}</span>{{ countryMeta(spinPlayer.country, lang).name }}</p>
-        <p class="spin-points">{{ Number(spinPlayer.points).toFixed(2) }} {{ lang === 'en' ? 'points' : 'очков' }} · #{{ spinPlayer.rank }}</p>
-        <button class="primary-button" :disabled="spinRolling" @click="spinSMLT">{{ spinRolling ? (lang === 'en' ? 'Rolling…' : 'Крутим…') : (lang === 'en' ? 'Again' : 'Ещё раз') }}</button>
-      </section>
-    </div>
   </div>
 </template>
