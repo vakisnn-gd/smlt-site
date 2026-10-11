@@ -46,6 +46,9 @@ func main() {
 		if r.URL.Path != "/" {
 			full := filepath.Join(frontendDir, filepath.FromSlash(path.Clean("/"+r.URL.Path)))
 			if info, err := os.Stat(full); err == nil && !info.IsDir() {
+				if r.URL.Path == "/manifest.webmanifest" {
+					w.Header().Set("Content-Type", "application/manifest+json")
+				}
 				if strings.HasPrefix(r.URL.Path, "/assets/") {
 					w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
 				} else {
