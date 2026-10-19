@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -16,6 +17,8 @@ import (
 )
 
 const demonlistUsersURL = "https://api.demonlist.org/leaderboard/user/list"
+
+var errDemonlistUserNotFound = errors.New("player not found on Demonlist")
 
 var (
 	demonlistHTTPClient = &http.Client{Timeout: 12 * time.Second}
@@ -110,11 +113,16 @@ func syncDemonlistPlayers() {
 
 	updates := make([]standingUpdate, 0, len(players))
 	failed := 0
-	failureDetails := make([]string, 0)
+	unmatched := 0
+	problemDetails := make([]string, 0)
 	for item := range results {
 		if item.err != nil {
-			failed++
-			failureDetails = append(failureDetails, fmt.Sprintf("%q: %v", item.player.Name, item.err))
+			if errors.Is(item.err, errDemonlistUserNotFound) {
+				unmatched++
+			} else {
+				failed++
+			}
+			problemDetails = append(problemDetails, fmt.Sprintf("%q: %v", item.player.Name, item.err))
 			continue
 		}
 		updates = append(updates, item.update)
@@ -129,9 +137,9 @@ func syncDemonlistPlayers() {
 		log.Printf("[DEMONLIST SYNC] update: %v", err)
 		return
 	}
-	log.Printf("[DEMONLIST SYNC] matched=%d changed=%d failed=%d", len(updates), changed, failed)
-	for _, detail := range failureDetails {
-		log.Printf("[DEMONLIST SYNC] failed player: %s", detail)
+	log.Printf("[DEMONLIST SYNC] matched=%d changed=%d unmatched=%d failed=%d", len(updates), changed, unmatched, failed)
+	for _, detail := range problemDetails {
+		log.Printf("[DEMONLIST SYNC] player issue: %s", detail)
 	}
 	if recent, err := dbGetRecentRankChanges(20); err == nil {
 		notifyRankChanges(recent)
@@ -164,7 +172,7 @@ func fetchDemonlistUser(name string) (demonlistUser, error) {
 			return user, nil
 		}
 	}
-	return demonlistUser{}, fmt.Errorf("player %q not found", name)
+	return demonlistUser{}, fmt.Errorf("%w: %q", errDemonlistUserNotFound, name)
 }
 
 func dbApplyStandingUpdates(updates []standingUpdate) (int, error) {
