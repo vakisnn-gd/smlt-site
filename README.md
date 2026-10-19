@@ -3,6 +3,12 @@
 Исходный код сайта [smlt.lol](https://smlt.lol): публичный интерфейс Vue и
 Go-бекенд. Репозиторий приватный.
 
+Это единственный канонический Git-репозиторий проекта и источник production-кода.
+Рабочая копия на VPS: `/opt/smlt/site-source`; production запускается из
+`/opt/smlt/backend/server`, а production-статические файлы находятся в
+`/opt/smlt/frontend-dist/`. Каталоги runtime не являются Git-источником.
+См. `/opt/smlt/AGENTS.md` на VPS для карты сервисов и безопасного процесса сборки.
+
 ```text
 .
 ├── frontend/  Vue 3 + Vite: страницы, стили и компоненты

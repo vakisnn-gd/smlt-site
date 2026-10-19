@@ -70,6 +70,7 @@ func syncDemonlistPlayers() {
 	}
 
 	type result struct {
+		player Player
 		update standingUpdate
 		err    error
 	}
@@ -83,15 +84,18 @@ func syncDemonlistPlayers() {
 			for player := range jobs {
 				user, err := fetchDemonlistUser(player.Name)
 				if err != nil {
-					results <- result{err: err}
+					results <- result{player: player, err: err}
 					continue
 				}
 				points, err := strconv.ParseFloat(user.Points, 64)
-				if err != nil {
-					results <- result{err: err}
+				if err != nil || math.IsNaN(points) || math.IsInf(points, 0) {
+					if err == nil {
+						err = fmt.Errorf("invalid non-finite points %q", user.Points)
+					}
+					results <- result{player: player, err: err}
 					continue
 				}
-				results <- result{update: standingUpdate{PlayerID: player.ID, GDLID: user.ID, Points: points, GlobalRank: user.Placement}}
+				results <- result{player: player, update: standingUpdate{PlayerID: player.ID, GDLID: user.ID, Points: points, GlobalRank: user.Placement}}
 			}
 		}()
 	}
@@ -106,9 +110,11 @@ func syncDemonlistPlayers() {
 
 	updates := make([]standingUpdate, 0, len(players))
 	failed := 0
+	failureDetails := make([]string, 0)
 	for item := range results {
 		if item.err != nil {
 			failed++
+			failureDetails = append(failureDetails, fmt.Sprintf("%q: %v", item.player.Name, item.err))
 			continue
 		}
 		updates = append(updates, item.update)
@@ -124,6 +130,9 @@ func syncDemonlistPlayers() {
 		return
 	}
 	log.Printf("[DEMONLIST SYNC] matched=%d changed=%d failed=%d", len(updates), changed, failed)
+	for _, detail := range failureDetails {
+		log.Printf("[DEMONLIST SYNC] failed player: %s", detail)
+	}
 	if recent, err := dbGetRecentRankChanges(20); err == nil {
 		notifyRankChanges(recent)
 	}
