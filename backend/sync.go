@@ -50,7 +50,7 @@ type sqlExecutor interface {
 func startDemonlistSync() {
 	time.Sleep(2 * time.Second)
 	syncDemonlistPlayers()
-	ticker := time.NewTicker(30 * time.Minute)
+	ticker := time.NewTicker(15 * time.Minute)
 	defer ticker.Stop()
 	for range ticker.C {
 		syncDemonlistPlayers()

@@ -261,6 +261,7 @@ func handleSearchDemonlist(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success":    true,
 		"name":       found.Username,
+		"gdlId":      found.ID,
 		"country":    country,
 		"points":     points,
 		"demon":      hardestDemon,

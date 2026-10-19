@@ -20,7 +20,7 @@ async function save() {
       await api.updatePlayer(props.player.name, payload)
     } else {
       const found = await api.search(form.name.trim())
-      await api.addPlayer({name: found.name, country: String(found.country || 'OTHER').toUpperCase(), points: found.points, demon: found.demon || '—', globalRank: found.globalRank})
+      await api.addPlayer({name: found.name, country: String(found.country || 'OTHER').toUpperCase(), points: found.points, demon: found.demon || '—', globalRank: found.globalRank, gdlId: found.gdlId})
     }
     emit('saved')
   } catch (err) {

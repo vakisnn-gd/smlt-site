@@ -389,7 +389,7 @@ func handleAddPlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := dbAddPlayer(Player{Country: req.Country, Name: req.Name, Points: req.Points, Demon: req.Demon, GlobalRank: req.GlobalRank}); err != nil {
+	if err := dbAddPlayer(Player{Country: req.Country, Name: req.Name, Points: req.Points, Demon: req.Demon, GlobalRank: req.GlobalRank, GDLID: req.GDLID}); err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Игрок уже существует или ошибка БД"})
 		return

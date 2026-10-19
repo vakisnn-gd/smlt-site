@@ -75,6 +75,7 @@ type PlayerRequest struct {
 	Points     float64 `json:"points"`
 	Demon      string  `json:"demon"`
 	GlobalRank int     `json:"globalRank"`
+	GDLID      int64   `json:"gdlId"`
 }
 
 type RateLimit struct {

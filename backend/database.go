@@ -323,8 +323,8 @@ func refreshRanks() {
 
 func dbAddPlayer(p Player) error {
 	err := db.QueryRow(
-		"INSERT INTO players (rank_order, country, name, points, demon, global_rank) VALUES (0, $1, $2, $3, $4, $5) RETURNING id",
-		p.Country, p.Name, p.Points, p.Demon, p.GlobalRank,
+		"INSERT INTO players (rank_order, country, name, points, demon, global_rank, demonlist_id) VALUES (0, $1, $2, $3, $4, $5, NULLIF($6, 0)) RETURNING id",
+		p.Country, p.Name, p.Points, p.Demon, p.GlobalRank, p.GDLID,
 	).Scan(&p.ID)
 	if err != nil {
 		return err
