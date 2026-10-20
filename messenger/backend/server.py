@@ -4,6 +4,7 @@ from http.cookies import CookieError, SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
+from contextlib import contextmanager
 import base64
 import hashlib
 import hmac
@@ -107,7 +108,7 @@ def decrypt_body(value):
 
 def db_init():
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    with sqlite3.connect(DB, timeout=5) as con:
+    with db_connection() as con:
         con.execute("PRAGMA busy_timeout=5000")
         con.execute("PRAGMA journal_mode=WAL")
         con.execute("CREATE TABLE IF NOT EXISTS rooms (code TEXT PRIMARY KEY, owner_token TEXT NOT NULL, name TEXT NOT NULL DEFAULT 'Новая комната', created_at TEXT NOT NULL DEFAULT (datetime('now')))")
@@ -150,6 +151,14 @@ def db_init():
         con.execute("""CREATE TABLE IF NOT EXISTS account_rooms (
             account_id INTEGER NOT NULL, room TEXT NOT NULL, added_at INTEGER NOT NULL,
             PRIMARY KEY(account_id, room), FOREIGN KEY(account_id) REFERENCES accounts(id) ON DELETE CASCADE)""")
+        con.execute("""CREATE TABLE IF NOT EXISTS friendships (
+            account_a INTEGER NOT NULL, account_b INTEGER NOT NULL, created_at INTEGER NOT NULL,
+            PRIMARY KEY(account_a, account_b), CHECK(account_a < account_b))""")
+        con.execute("""CREATE TABLE IF NOT EXISTS friend_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, requester_id INTEGER NOT NULL,
+            recipient_id INTEGER NOT NULL, created_at INTEGER NOT NULL,
+            UNIQUE(requester_id, recipient_id), CHECK(requester_id != recipient_id))""")
+        con.execute("CREATE INDEX IF NOT EXISTS idx_friend_requests_recipient ON friend_requests(recipient_id, created_at)")
         con.execute("""CREATE TABLE IF NOT EXISTS legacy_claims (
             token_hash TEXT PRIMARY KEY, account_id INTEGER NOT NULL,
             FOREIGN KEY(account_id) REFERENCES accounts(id) ON DELETE CASCADE)""")
@@ -160,7 +169,7 @@ def db_init():
 
 
 def migrate_bodies():
-    with LOCK, sqlite3.connect(DB, timeout=5) as con:
+    with LOCK, db_connection() as con:
         rows = con.execute("SELECT id,body FROM messages WHERE CAST(body_enc AS INTEGER)=0").fetchall()
         for mid, body in rows:
             con.execute("UPDATE messages SET body=?,body_enc=1 WHERE id=?", (encrypt_body(body), mid))
@@ -173,6 +182,19 @@ def json_bytes(value):
 
 def account_payload(row):
     return {"nickname": row[1], "avatar_id": row[2], "color_id": row[3], "registered_nickname": row[-1] or row[1]}
+
+
+@contextmanager
+def db_connection():
+    con = sqlite3.connect(DB, timeout=5)
+    try:
+        yield con
+        con.commit()
+    except BaseException:
+        con.rollback()
+        raise
+    finally:
+        con.close()
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -255,7 +277,7 @@ class Handler(BaseHTTPRequestHandler):
     def has_session(self):
         if not self.cookie_token():
             return False
-        with sqlite3.connect(DB, timeout=5) as con:
+        with db_connection() as con:
             return self.current_account(con) is not None
 
     def require_mutation_origin(self):
@@ -283,13 +305,57 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/health":
             return self.send_json({"ok": True, "encryption": "aes-256-gcm", "accounts": True})
         if parsed.path == "/api/auth/me":
-            with sqlite3.connect(DB, timeout=5) as con:
+            with db_connection() as con:
                 account = self.current_account(con)
             if not account:
                 return self.send_json({"authenticated": False}, 401)
             return self.send_json({"authenticated": True, "account": account_payload(account)})
+        if parsed.path == "/api/friends":
+            with db_connection() as con:
+                account = self.current_account(con)
+                if not account:
+                    return self.send_json({"error": "Войдите в аккаунт."}, 401)
+                friends = con.execute("""SELECT a.nickname,a.registered_nickname,a.avatar_id,a.color_id
+                    FROM friendships f JOIN accounts a ON a.id=CASE WHEN f.account_a=? THEN f.account_b ELSE f.account_a END
+                    WHERE f.account_a=? OR f.account_b=? ORDER BY a.nickname COLLATE NOCASE""",
+                    (account[0], account[0], account[0])).fetchall()
+                incoming = con.execute("""SELECT r.id,a.nickname,a.registered_nickname,a.avatar_id,a.color_id
+                    FROM friend_requests r JOIN accounts a ON a.id=r.requester_id
+                    WHERE r.recipient_id=? ORDER BY r.created_at""", (account[0],)).fetchall()
+                outgoing = con.execute("""SELECT a.nickname,a.registered_nickname
+                    FROM friend_requests r JOIN accounts a ON a.id=r.recipient_id
+                    WHERE r.requester_id=? ORDER BY r.created_at""", (account[0],)).fetchall()
+            pack = lambda row: {"nickname": row[0], "registered_nickname": row[1] or row[0], "avatar_id": row[2], "color_id": row[3]}
+            return self.send_json({"friends": [pack(row) for row in friends],
+                "incoming": [{"id": row[0], **pack(row[1:])} for row in incoming],
+                "outgoing": [{"nickname": row[0], "registered_nickname": row[1] or row[0]} for row in outgoing]})
+        if parsed.path == "/api/notifications":
+            query = parse_qs(parsed.query)
+            try:
+                after = max(0, int(query.get("after", ["0"])[0]))
+            except ValueError:
+                return self.send_json({"error": "Invalid notification cursor."}, 400)
+            if after > 9223372036854775807:
+                return self.send_json({"error": "Invalid notification cursor."}, 400)
+            with LOCK, db_connection() as con:
+                account = self.current_account(con)
+                if not account:
+                    return self.send_json({"error": "Войдите в аккаунт."}, 401)
+                latest = con.execute("""SELECT COALESCE(MAX(m.id),0) FROM messages m
+                    JOIN account_rooms ar ON ar.room=m.room WHERE ar.account_id=?""", (account[0],)).fetchone()[0]
+                if query.get("baseline", [""])[0] == "1":
+                    return self.send_json({"notifications": [], "cursor": latest})
+                rows = con.execute("""SELECT m.id,m.room,r.name,m.nickname,m.body,m.created_at
+                    FROM messages m JOIN account_rooms ar ON ar.room=m.room
+                    JOIN rooms r ON r.code=m.room
+                    WHERE ar.account_id=? AND m.id>? AND m.author_token!=?
+                    ORDER BY m.id LIMIT 40""", (account[0], after, account[4])).fetchall()
+            notices = [{"id": row[0], "room": row[1], "room_name": row[2], "nickname": row[3],
+                "body": decrypt_body(row[4])[:180], "created_at": row[5]} for row in rows]
+            cursor = rows[-1][0] if len(rows) >= 40 else max(latest, rows[-1][0] if rows else after)
+            return self.send_json({"notifications": notices, "cursor": cursor})
         if parsed.path == "/api/rooms":
-            with sqlite3.connect(DB, timeout=5) as con:
+            with db_connection() as con:
                 account = self.current_account(con)
                 if not account:
                     return self.send_json({"error": "Войдите в аккаунт."}, 401)
@@ -306,7 +372,7 @@ class Handler(BaseHTTPRequestHandler):
                 after = 0
             if not room or len(guest_token) < 32:
                 return self.send_json({"error": "room and author token are required"}, 400)
-            with LOCK, sqlite3.connect(DB, timeout=5) as con:
+            with LOCK, db_connection() as con:
                 self.cleanup(con)
                 identity = self.identity_hash(con, guest_token)
                 rr = self.room_row(con, room)
@@ -326,6 +392,90 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if not self.require_mutation_origin():
             return
+        if self.path == "/api/friends/requests":
+            if not self.allow("friend_request", 12, 300):
+                return self.send_json({"error": "Слишком много запросов в друзья. Попробуйте позже."}, 429)
+            payload = self.read_json()
+            payload = payload if isinstance(payload, dict) else {}
+            raw_nickname = str(payload.get("nickname", ""))
+            nickname = nick_value(raw_nickname)
+            if len(raw_nickname.strip()) > MAX_NICK:
+                return self.send_json({"error": "Ник не должен быть длиннее 32 символов."}, 400)
+            if not nickname or not nick_key(nickname):
+                return self.send_json({"error": "Укажите ник пользователя."}, 400)
+            with LOCK, db_connection() as con:
+                con.execute("BEGIN IMMEDIATE")
+                account = self.current_account(con)
+                if not account:
+                    con.rollback()
+                    return self.send_json({"error": "Войдите в аккаунт."}, 401)
+                target = con.execute("SELECT id,nickname FROM accounts WHERE nickname_key=?", (nick_key(nickname),)).fetchone()
+                if not target:
+                    con.rollback()
+                    return self.send_json({"error": "Аккаунт с таким текущим ником не найден."}, 404)
+                if target[0] == account[0]:
+                    con.rollback()
+                    return self.send_json({"error": "Нельзя добавить самого себя."}, 400)
+                a, b = sorted((account[0], target[0]))
+                if con.execute("SELECT 1 FROM friendships WHERE account_a=? AND account_b=?", (a, b)).fetchone():
+                    con.rollback()
+                    return self.send_json({"error": "Этот пользователь уже в друзьях."}, 409)
+                reverse = con.execute("SELECT id FROM friend_requests WHERE requester_id=? AND recipient_id=?", (target[0], account[0])).fetchone()
+                if reverse:
+                    con.execute("INSERT OR IGNORE INTO friendships(account_a,account_b,created_at) VALUES(?,?,?)", (a, b, now_ts()))
+                    con.execute("DELETE FROM friend_requests WHERE (requester_id=? AND recipient_id=?) OR (requester_id=? AND recipient_id=?)", (account[0], target[0], target[0], account[0]))
+                    con.commit()
+                    return self.send_json({"ok": True, "status": "friends"}, 201)
+                try:
+                    con.execute("INSERT INTO friend_requests(requester_id,recipient_id,created_at) VALUES(?,?,?)", (account[0], target[0], now_ts()))
+                except sqlite3.IntegrityError:
+                    con.rollback()
+                    return self.send_json({"error": "Запрос этому пользователю уже отправлен."}, 409)
+                con.commit()
+            return self.send_json({"ok": True, "status": "pending"}, 201)
+        if self.path.startswith("/api/friends/requests/"):
+            suffix = self.path[len("/api/friends/requests/"):]
+            try:
+                request_id = int(suffix)
+            except ValueError:
+                return self.send_json({"error": "Некорректный запрос."}, 400)
+            if request_id < 1 or request_id > 9223372036854775807:
+                return self.send_json({"error": "Некорректный запрос."}, 400)
+            payload = self.read_json()
+            payload = payload if isinstance(payload, dict) else {}
+            action = payload.get("action")
+            if action not in {"accept", "decline"}:
+                return self.send_json({"error": "Выберите действие с запросом."}, 400)
+            with LOCK, db_connection() as con:
+                con.execute("BEGIN IMMEDIATE")
+                account = self.current_account(con)
+                request = con.execute("SELECT requester_id,recipient_id FROM friend_requests WHERE id=?", (request_id,)).fetchone() if account else None
+                if not request or request[1] != account[0]:
+                    con.rollback()
+                    return self.send_json({"error": "Запрос не найден."}, 404)
+                if action == "accept":
+                    a, b = sorted((request[0], request[1]))
+                    con.execute("INSERT OR IGNORE INTO friendships(account_a,account_b,created_at) VALUES(?,?,?)", (a, b, now_ts()))
+                con.execute("DELETE FROM friend_requests WHERE id=?", (request_id,))
+                con.commit()
+            return self.send_json({"ok": True, "status": "friends" if action == "accept" else "declined"})
+        if self.path == "/api/friends/remove":
+            payload = self.read_json()
+            payload = payload if isinstance(payload, dict) else {}
+            raw_nickname = str(payload.get("nickname", ""))
+            nickname = nick_value(raw_nickname)
+            if len(raw_nickname.strip()) > MAX_NICK:
+                return self.send_json({"error": "Ник не должен быть длиннее 32 символов."}, 400)
+            with LOCK, db_connection() as con:
+                account = self.current_account(con)
+                if not account:
+                    return self.send_json({"error": "Войдите в аккаунт."}, 401)
+                target = con.execute("SELECT id FROM accounts WHERE nickname_key=?", (nick_key(nickname),)).fetchone()
+                if not target or target[0] == account[0]:
+                    return self.send_json({"error": "Друг не найден."}, 404)
+                a, b = sorted((account[0], target[0]))
+                con.execute("DELETE FROM friendships WHERE account_a=? AND account_b=?", (a, b))
+            return self.send_json({"ok": True})
         if self.path == "/api/auth/register":
             if not self.allow("register", 5, 300):
                 return self.send_json({"error": "Слишком много попыток регистрации. Попробуйте позже."}, 429)
@@ -342,7 +492,7 @@ class Handler(BaseHTTPRequestHandler):
             canonical_hash = token_hash(secrets.token_urlsafe(32))
             session = secrets.token_urlsafe(32)
             ip_hash = self.ip_digest()
-            with LOCK, sqlite3.connect(DB, timeout=5) as con:
+            with LOCK, db_connection() as con:
                 con.execute("BEGIN IMMEDIATE")
                 if con.execute("SELECT 1 FROM accounts WHERE nickname_key=?", (nick_key(nickname),)).fetchone():
                     con.rollback()
@@ -368,7 +518,7 @@ class Handler(BaseHTTPRequestHandler):
             payload = payload if isinstance(payload, dict) else {}
             nickname = nick_value(payload.get("nickname", ""))
             password = payload.get("password", "")
-            with LOCK, sqlite3.connect(DB, timeout=5) as con:
+            with LOCK, db_connection() as con:
                 account = con.execute("SELECT id,nickname,avatar_id,color_id,token_hash,password_salt,password_hash,registered_nickname FROM accounts WHERE nickname_key=?", (nick_key(nickname),)).fetchone()
                 valid_input = isinstance(password, str) and len(password) <= 128
                 safe_password = password if valid_input else "invalid"
@@ -392,7 +542,7 @@ class Handler(BaseHTTPRequestHandler):
             password = payload.get("password", "")
             if not valid_password(password):
                 return self.send_json({"error": "Новый пароль должен содержать от 12 до 128 символов."}, 400)
-            with LOCK, sqlite3.connect(DB, timeout=5) as con:
+            with LOCK, db_connection() as con:
                 con.execute("BEGIN IMMEDIATE")
                 account = con.execute("SELECT id,recovery_salt,recovery_hash FROM accounts WHERE nickname_key=?", (nick_key(nickname),)).fetchone()
                 salt = account[1] if account else b"messenger-fake-salt"
@@ -414,7 +564,7 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/api/auth/logout":
             raw = self.cookie_token()
             if raw:
-                with sqlite3.connect(DB, timeout=5) as con:
+                with db_connection() as con:
                     con.execute("DELETE FROM account_sessions WHERE token_hash=?", (token_hash(raw),))
             return self.send_json({"ok": True}, headers=(self.session_cookie("", 0),))
 
@@ -427,7 +577,7 @@ class Handler(BaseHTTPRequestHandler):
             color = str(payload.get("color_id", ""))
             if len(raw_nick.strip()) > MAX_NICK or len(nickname) < 3 or not nick_key(nickname) or not valid_profile(avatar, color):
                 return self.send_json({"error": "Проверь ник, аватар и цвет."}, 400)
-            with LOCK, sqlite3.connect(DB, timeout=5) as con:
+            with LOCK, db_connection() as con:
                 account = self.current_account(con)
                 if not account:
                     return self.send_json({"error": "Сначала войди в аккаунт."}, 401)
@@ -443,7 +593,7 @@ class Handler(BaseHTTPRequestHandler):
             guest_token = str(payload.get("author_token", ""))[:256]
             if len(guest_token) < 32:
                 return self.send_json({"error": "Не найден профиль этого устройства."}, 400)
-            with LOCK, sqlite3.connect(DB, timeout=5) as con:
+            with LOCK, db_connection() as con:
                 con.execute("BEGIN IMMEDIATE")
                 account = self.current_account(con)
                 if not account:
@@ -473,7 +623,7 @@ class Handler(BaseHTTPRequestHandler):
             if len(guest_token) < 32:
                 return self.send_json({"error": "author token is required"}, 400)
             code = secrets.token_urlsafe(32)
-            with LOCK, sqlite3.connect(DB, timeout=5) as con:
+            with LOCK, db_connection() as con:
                 identity = self.identity_hash(con, guest_token)
                 con.execute("INSERT INTO rooms(code,owner_token,name) VALUES(?,?,?)", (code, identity, "Новая комната"))
                 account = self.current_account(con)
@@ -494,7 +644,7 @@ class Handler(BaseHTTPRequestHandler):
             color = str(payload.get("color_id", DEFAULT_COLOR))
             if len(raw.strip()) > MAX_NICK or not room or not nick or not nick_key(nick) or len(guest_token) < 32 or not valid_profile(avatar, color):
                 return self.send_json({"error": "Введите корректный профиль и код комнаты."}, 400)
-            with LOCK, sqlite3.connect(DB, timeout=5) as con:
+            with LOCK, db_connection() as con:
                 self.cleanup(con)
                 account = self.current_account(con)
                 identity = account[4] if account else token_hash(guest_token)
@@ -533,7 +683,7 @@ class Handler(BaseHTTPRequestHandler):
             color = str(payload.get("color_id", DEFAULT_COLOR))
             if len(raw.strip()) > MAX_NICK or len(raw_body.strip()) > MAX_MESSAGE or not room or not nick or not body or len(guest_token) < 32 or not valid_profile(avatar, color):
                 return self.send_json({"error": "Профиль и сообщение заполнены неверно."}, 400)
-            with LOCK, sqlite3.connect(DB, timeout=5) as con:
+            with LOCK, db_connection() as con:
                 self.cleanup(con)
                 account = self.current_account(con)
                 identity = account[4] if account else token_hash(guest_token)
@@ -553,7 +703,7 @@ class Handler(BaseHTTPRequestHandler):
             payload = payload if isinstance(payload, dict) else {}
             room = clean_text(payload.get("room"), 128)
             guest_token = str(payload.get("author_token", ""))[:256]
-            with LOCK, sqlite3.connect(DB, timeout=5) as con:
+            with LOCK, db_connection() as con:
                 identity = self.identity_hash(con, guest_token)
                 con.execute("DELETE FROM participants WHERE room=? AND token_hash=?", (room, identity))
                 account = self.current_account(con)
@@ -575,7 +725,7 @@ class Handler(BaseHTTPRequestHandler):
         name = clean_text(payload.get("name"), MAX_ROOM_NAME)
         if not name:
             return self.send_json({"error": "Название не может быть пустым."}, 400)
-        with LOCK, sqlite3.connect(DB, timeout=5) as con:
+        with LOCK, db_connection() as con:
             identity = self.identity_hash(con, guest_token)
             rr = self.room_row(con, room)
             if not rr:
@@ -592,7 +742,7 @@ class Handler(BaseHTTPRequestHandler):
             room = clean_text(self.path[len("/api/rooms/"):], 128)
             payload = self.read_json()
             guest_token = str((payload or {}).get("author_token", ""))[:256] if isinstance(payload, dict) else ""
-            with LOCK, sqlite3.connect(DB, timeout=5) as con:
+            with LOCK, db_connection() as con:
                 identity = self.identity_hash(con, guest_token)
                 rr = self.room_row(con, room)
                 if not rr:
@@ -615,7 +765,7 @@ class Handler(BaseHTTPRequestHandler):
         payload = payload if isinstance(payload, dict) else {}
         room = clean_text(payload.get("room"), 128)
         guest_token = str(payload.get("author_token", ""))[:256]
-        with LOCK, sqlite3.connect(DB, timeout=5) as con:
+        with LOCK, db_connection() as con:
             identity = self.identity_hash(con, guest_token)
             cur = con.execute("DELETE FROM messages WHERE id=? AND room=? AND author_token=?", (mid, room, identity))
         if not cur.rowcount:

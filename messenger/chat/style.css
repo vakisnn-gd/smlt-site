@@ -56,6 +56,32 @@ body.chat-open #lang{top:calc(2dvh + 12px)!important;right:calc(2vw + 12px)!impo
 .chat-item .room-action{box-sizing:border-box;width:88px;min-width:88px;max-width:88px!important;min-height:40px;display:inline-flex;flex:0 0 88px!important;align-items:center;justify-content:center;text-align:center;line-height:1.2;white-space:normal}
 @media(max-width:600px){#menu>.top>.menu-actions{width:100%;flex:1 1 100%}#menu>.top>.menu-actions button{font-size:12px;padding:9px 7px}}
 
+.friends-panel{margin-top:12px}
+.friends-panel summary{display:flex;align-items:center;gap:9px;cursor:pointer;font-weight:700;list-style:none}
+.friends-panel summary::-webkit-details-marker{display:none}
+.friends-panel summary::after{content:'＋';margin-left:auto;color:var(--muted)}
+.friends-panel[open] summary::after{content:'−'}
+.friends-badge,.unread-badge{display:inline-grid;min-width:22px;height:22px;place-items:center;padding:0 6px;border-radius:999px;background:#244567;color:#b9ddff;font-size:12px;font-weight:750}
+.friends-panel h2{margin:18px 0 8px;font-size:14px;color:var(--muted)}
+.friend-add-row{margin-top:12px}
+.friend-add-row input{min-width:0}
+.notification-toggle{margin-top:10px}
+.friend-row{display:flex;align-items:center;gap:8px;min-width:0;padding:8px 0;border-top:1px solid var(--line)}
+.friend-name{flex:1;min-width:0;padding:8px 10px;overflow:hidden;text-align:left;text-overflow:ellipsis;white-space:nowrap;background:transparent;color:var(--text)}
+.friend-name:hover{filter:brightness(1.1)}
+.friend-action{flex:0 0 auto;padding:8px 10px;font-size:12px}
+.friends-empty{margin:7px 0;color:var(--muted);font-size:13px}
+.unread-badge{width:max-content;margin-top:5px}
+.profile-dialog #profileAddFriend{width:100%;margin-top:16px}
+@media(max-width:600px){
+  .friends-panel{padding:13px 12px}
+  .friend-add-row{display:grid;grid-template-columns:minmax(0,1fr) auto}
+  .friend-add-row button{padding:10px 9px;font-size:13px}
+  .friend-row{flex-wrap:wrap}
+  .friend-name{flex:1 1 100%;padding:7px 2px}
+  .friend-action{flex:1 1 0;min-width:0;padding:9px 5px;white-space:normal}
+}
+
 /* Keep both the room list and the open chat comfortable on narrow phones. */
 @media(max-width:600px){
   html,body{min-width:320px}
