@@ -737,3 +737,79 @@ html[data-style="rough"][data-theme="light"] .social-link:hover {
   border-color: #111;
   background: #e1e1dd;
 }
+
+/* SMLT motion + surface refresh: keep the existing blue identity and all themes. */
+:root {
+  --blue: #63adff;
+  --blue-soft: #163454;
+  --radius: 16px;
+}
+html:not([data-style="rough"]) body {
+  background:
+    radial-gradient(ellipse 900px 420px at 82% -170px, rgba(54,145,255,.19), transparent 72%),
+    radial-gradient(ellipse 620px 360px at -8% 28%, rgba(47,92,155,.08), transparent 72%),
+    var(--bg);
+}
+html:not([data-style="rough"]) .site-header {
+  border-bottom-color: rgba(113,164,220,.15);
+  background: rgba(10,13,18,.84);
+  box-shadow: 0 8px 28px rgba(0,0,0,.12);
+}
+html:not([data-style="rough"]) .brand-favicon {
+  filter: drop-shadow(0 0 10px rgba(99,173,255,.24));
+  transition: transform .22s ease, filter .22s ease;
+}
+html:not([data-style="rough"]) .brand:hover .brand-favicon {
+  transform: rotate(-7deg) scale(1.06);
+  filter: drop-shadow(0 0 14px rgba(99,173,255,.42));
+}
+html:not([data-style="rough"]) .leaderboard-card,
+html:not([data-style="rough"]) .panel,
+html:not([data-style="rough"]) .page-heading,
+html:not([data-style="rough"]) .about-hero,
+html:not([data-style="rough"]) .about-grid article,
+html:not([data-style="rough"]) .contacts-panel,
+html:not([data-style="rough"]) .community-info,
+html:not([data-style="rough"]) .video-card,
+html:not([data-style="rough"]) .modal {
+  border-color: color-mix(in srgb, var(--line) 78%, #4b8fd4 22%);
+  box-shadow: 0 18px 54px rgba(0,0,0,.17), inset 0 1px rgba(255,255,255,.025);
+}
+html:not([data-style="rough"]) .leaderboard-card { animation: smlt-enter .42s cubic-bezier(.2,.7,.2,1) both; }
+html:not([data-style="rough"]) .player-row { transition: background .18s ease, box-shadow .18s ease, transform .18s ease; }
+html:not([data-style="rough"]) .player-row:hover { box-shadow: inset 3px 0 var(--blue); }
+html:not([data-style="rough"]) .primary-nav button,
+html:not([data-style="rough"]) .lang-button,
+html:not([data-style="rough"]) .icon-button,
+html:not([data-style="rough"]) .primary-button,
+html:not([data-style="rough"]) .secondary-button,
+html:not([data-style="rough"]) .search-box,
+html:not([data-style="rough"]) .select-box select {
+  transition: color .18s ease, background-color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+html:not([data-style="rough"]) .primary-button:hover,
+html:not([data-style="rough"]) .secondary-button:hover { transform: translateY(-1px); }
+html:not([data-style="rough"]) .search-box:focus-within,
+html:not([data-style="rough"]) .select-box select:focus-visible {
+  box-shadow: 0 0 0 3px rgba(99,173,255,.14);
+}
+@keyframes smlt-enter {
+  from { opacity: 0; transform: translateY(9px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  html:not([data-style="rough"]) .player-row { animation: smlt-enter .28s ease both; }
+  html:not([data-style="rough"]) .player-row:nth-child(2) { animation-delay: 18ms; }
+  html:not([data-style="rough"]) .player-row:nth-child(3) { animation-delay: 36ms; }
+  html:not([data-style="rough"]) .player-row:nth-child(4) { animation-delay: 54ms; }
+  html:not([data-style="rough"]) .player-row:nth-child(5) { animation-delay: 72ms; }
+  html:not([data-style="rough"]) .player-row:nth-child(n+6) { animation-delay: 90ms; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-style="rough"]) *, html:not([data-style="rough"]) *::before, html:not([data-style="rough"]) *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

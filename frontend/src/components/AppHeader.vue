@@ -34,8 +34,9 @@ onBeforeUnmount(() => clearTimeout(brandClickTimer))
       <button class="brand" @click="brandClick"><img class="brand-favicon" :src="roughMode ? '/avatars/smlt-rough.webp' : '/favicon2.ico'" alt=""><strong>SMLT</strong></button>
       <nav :class="['primary-nav', {open: menuOpen}]" :aria-label="lang === 'en' ? 'Main navigation' : 'Основная навигация'" @keydown.esc="menuOpen = false">
         <button :class="{active: view === 'leaderboard'}" :aria-current="view === 'leaderboard' ? 'page' : undefined" @click="go('leaderboard')">{{ lang === 'en' ? 'Leaderboard' : 'Рейтинг' }}</button>
-        <button :class="{active: view === 'tools'}" :aria-current="view === 'tools' ? 'page' : undefined" @click="go('tools')">{{ lang === 'en' ? 'Tools' : 'Инструменты' }}</button>
         <button :class="{active: view === 'events'}" :aria-current="view === 'events' ? 'page' : undefined" @click="go('events')">{{ lang === 'en' ? 'Events' : 'Ивенты' }}</button>
+        <button :class="{active: view === 'chats'}" :aria-current="view === 'chats' ? 'page' : undefined" @click="go('chats')">{{ lang === 'en' ? 'Chats' : 'Чаты' }}</button>
+        <button :class="{active: view === 'tools'}" :aria-current="view === 'tools' ? 'page' : undefined" @click="go('tools')">{{ lang === 'en' ? 'Tools' : 'Инструменты' }}</button>
         <button :class="{active: view === 'about'}" :aria-current="view === 'about' ? 'page' : undefined" @click="go('about')">{{ lang === 'en' ? 'About' : 'О SMLT' }}</button>
       </nav>
       <div class="nav-actions">

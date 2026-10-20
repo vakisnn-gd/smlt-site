@@ -5,7 +5,11 @@ import './styles.css'
 
 const app = createApp(App)
 app.use(router)
-router.isReady().then(() => app.mount('#app'))
+router.isReady().then(() => {
+  const root = document.querySelector('#app')
+  app.mount(root)
+  root.hidden = false
+})
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

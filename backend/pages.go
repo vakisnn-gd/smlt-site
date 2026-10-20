@@ -45,6 +45,13 @@ func serveAppPage(w http.ResponseWriter, r *http.Request, frontendDir string) bo
 		if isEnglish {
 			meta.title, meta.description, content = "SMLT Events", "SMLT events and collaborations.", renderEventsFallback(true)
 		}
+	case "/chats":
+		meta = pageMeta{"SMLT — чаты", "Комнаты чата сообщества SMLT.", "https://smlt.lol" + requestPath}
+		content = `<main class="page"><h1>Чаты SMLT</h1><p>Комнаты чата сообщества.</p><p><a href="https://chat.smlt.lol/">Открыть чат отдельно</a></p></main>`
+		if isEnglish {
+			meta.title, meta.description = "SMLT Chats", "SMLT community chat rooms."
+			content = `<main class="page"><h1>SMLT Chats</h1><p>Community chat rooms.</p><p><a href="https://chat.smlt.lol/">Open the chat separately</a></p></main>`
+		}
 	case "/tools":
 		meta = pageMeta{"SMLT — инструменты", "Инструменты SMLT для сравнения и изучения игроков.", "https://smlt.lol" + requestPath}
 		content = `<main class="page"><h1>Инструменты SMLT</h1><p>Сравнение игроков, случайный игрок, темы и установка приложения.</p></main>`
@@ -312,5 +319,5 @@ func isAppPath(requestPath string) bool {
 			pagePath = "/"
 		}
 	}
-	return pagePath == "/" || pagePath == "/tools" || pagePath == "/events" || pagePath == "/about" || strings.HasPrefix(pagePath, "/player/")
+	return pagePath == "/" || pagePath == "/tools" || pagePath == "/events" || pagePath == "/chats" || pagePath == "/about" || strings.HasPrefix(pagePath, "/player/")
 }

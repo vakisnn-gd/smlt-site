@@ -7,6 +7,7 @@ import AppHeader from './components/AppHeader.vue'
 import LeaderboardView from './components/LeaderboardView.vue'
 import ToolsView from './components/ToolsView.vue'
 import EventsView from './components/EventsView.vue'
+import ChatsView from './components/ChatsView.vue'
 import AboutView from './components/AboutView.vue'
 import LoginModal from './components/LoginModal.vue'
 import PlayerModal from './components/PlayerModal.vue'
@@ -72,12 +73,14 @@ function updatePageMeta() {
   const titles = {
     leaderboard: lang.value === 'en' ? 'SMLT Leaderboard' : 'SMLT — рейтинг',
     events: lang.value === 'en' ? 'SMLT Events' : 'SMLT — ивенты',
+    chats: lang.value === 'en' ? 'SMLT Chats' : 'SMLT — чаты',
     tools: lang.value === 'en' ? 'SMLT Tools' : 'SMLT — инструменты',
     about: lang.value === 'en' ? 'About SMLT' : 'О SMLT',
   }
   const descriptions = {
     leaderboard: lang.value === 'en' ? 'SMLT community leaderboard and player achievements.' : 'Рейтинг и достижения игроков сообщества SMLT.',
     events: lang.value === 'en' ? 'SMLT events and collaborations.' : 'Ивенты и коллабы сообщества SMLT.',
+    chats: lang.value === 'en' ? 'SMLT community chat rooms.' : 'Комнаты чата сообщества SMLT.',
     tools: lang.value === 'en' ? 'SMLT tools for comparing and exploring players.' : 'Инструменты SMLT для сравнения и изучения игроков.',
     about: lang.value === 'en' ? 'Information about the SMLT community, contacts and projects.' : 'Информация о сообществе SMLT, контакты и проекты.',
   }
@@ -245,8 +248,9 @@ watch(players, updatePageMeta)
     <AppHeader :view="view" :lang="lang" :is-admin="isAdmin" :rough-mode="roughMode" @navigate="navigate" @language="toggleLanguage" @easter-egg="showEasterEgg = true" @login="showLogin = true" @add="openAdd" @logout="logout" />
     <main>
       <LeaderboardView v-if="view === 'leaderboard'" :players="players" :changes="changes" :loading="loading" :error="error" :lang="lang" :is-admin="isAdmin" :player-id="playerId" @edit="openEdit" @delete="removePlayer" @delete-change="removeChange" @retry="loadLeaderboard(true)" @open-player="id => router.push({name: routeName('player'), params: {id}})" @close-player="router.push({name: routeName('leaderboard')})" />
-      <ToolsView v-else-if="view === 'tools'" :players="players" :lang="lang" :theme-mode="themeMode" :rough-mode="roughMode" :can-install="canInstall" @theme="toggleTheme" @style="toggleStyle" @install="installApp" @open-player="id => router.push({name: routeName('player'), params: {id}})" />
       <EventsView v-else-if="view === 'events'" :lang="lang" :events="events" :is-admin="isAdmin" @changed="reloadEvents" />
+      <ChatsView v-else-if="view === 'chats'" :lang="lang" />
+      <ToolsView v-else-if="view === 'tools'" :players="players" :lang="lang" :theme-mode="themeMode" :rough-mode="roughMode" :can-install="canInstall" @theme="toggleTheme" @style="toggleStyle" @install="installApp" @open-player="id => router.push({name: routeName('player'), params: {id}})" />
       <AboutView v-else :lang="lang" :is-admin="isAdmin" @leaderboard="navigate('leaderboard')" @events="navigate('events')" @login="showLogin = true" @logout="logout" />
     </main>
     <transition name="toast"><div v-if="notice" class="toast" role="status" aria-live="polite" @click="notice = ''">{{ notice }}</div></transition>

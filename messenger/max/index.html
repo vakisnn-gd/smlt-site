@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" type="image/png" href="/smlt-max-fixed.png?v=2"><link rel="apple-touch-icon" href="/smlt-max-fixed.png?v=2">
+<title>SMLT Max — аккаунт</title><link rel="stylesheet" href="/style.css?v=4">
+</head>
+<body>
+<a class="site-link" href="https://smlt.lol/">← На сайт SMLT</a>
+<main>
+  <section id="authPanel" class="card auth-panel">
+    <div class="brand"><img class="logo" src="/smlt-max-fixed.png?v=2" alt="SMLT Max"><h1>SMLT Max</h1></div>
+    <p class="sub">Аккаунт нужен, чтобы сохранять профиль и список чатов между устройствами.</p>
+    <div class="auth-tabs"><button id="showLogin" type="button" class="secondary">Войти</button><button id="showRegister" type="button" class="secondary">Создать аккаунт</button></div>
+    <form id="loginForm" class="auth-form">
+      <label for="loginNickname">Ник</label><input id="loginNickname" maxlength="32" autocomplete="username" required>
+      <label for="loginPassword">Пароль</label><input id="loginPassword" type="password" maxlength="128" autocomplete="current-password" required>
+      <button class="continue" type="submit">Войти</button>
+      <button id="showRecovery" type="button" class="text-button">Забыл пароль — восстановить по коду</button>
+    </form>
+    <form id="registerForm" class="auth-form" hidden>
+      <label for="registerNickname">Ник для входа и чатов</label><input id="registerNickname" maxlength="32" minlength="3" autocomplete="username" required>
+      <label for="registerPassword">Пароль (не короче 12 символов)</label><input id="registerPassword" type="password" minlength="12" maxlength="128" autocomplete="new-password" required>
+      <label for="registerPasswordConfirm">Повтори пароль</label><input id="registerPasswordConfirm" type="password" minlength="12" maxlength="128" autocomplete="new-password" required>
+      <p class="hint">После регистрации сохрани код восстановления — он понадобится, если забудешь пароль.</p>
+      <button class="continue" type="submit">Создать аккаунт</button>
+    </form>
+    <form id="recoveryForm" class="auth-form" hidden>
+      <label for="recoveryNickname">Ник аккаунта</label><input id="recoveryNickname" maxlength="32" autocomplete="username" required>
+      <label for="recoveryCode">Код восстановления</label><input id="recoveryCode" maxlength="40" autocomplete="off" required>
+      <label for="recoveryPassword">Новый пароль (не короче 12 символов)</label><input id="recoveryPassword" type="password" minlength="12" maxlength="128" autocomplete="new-password" required>
+      <button class="continue" type="submit">Сбросить пароль</button>
+    </form>
+    <p id="authError" class="form-error" role="alert" hidden></p>
+  </section>
+
+  <section id="recoveryDisplay" class="card" hidden>
+    <div class="brand"><img class="logo" src="/smlt-max-fixed.png?v=2" alt=""><h1>Код восстановления</h1></div>
+    <p>Сохрани его сейчас в надёжном месте. Он показывается только один раз; при восстановлении пароля выдаётся новый код.</p>
+    <code id="recoveryCodeValue" class="recovery-code"></code>
+    <button id="copyRecovery" type="button" class="secondary">Скопировать код</button>
+    <button id="savedRecovery" type="button" class="continue">Я сохранил код</button>
+  </section>
+
+  <section id="profileEditor" class="card" hidden>
+    <div class="brand"><img class="logo" src="/smlt-max-fixed.png?v=2" alt="SMLT Max"><h1>SMLT Max</h1></div>
+    <p class="sub">Профиль сохранится в аккаунте и будет доступен на других устройствах.</p>
+    <label for="nickname">Твой ник</label><input id="nickname" maxlength="32" minlength="3" autocomplete="nickname" required>
+    <div class="legend">Аватарка</div><div id="avatars" class="avatars"></div>
+    <div class="legend">Цвет имени</div><div id="colors" class="colors"></div>
+    <button id="continue" class="continue" type="button">Перейти в чаты</button>
+    <button id="logout" class="text-button" type="button">Выйти из аккаунта</button>
+    <p id="profileError" class="form-error" role="alert" hidden></p>
+  </section>
+</main>
+<dialog id="logoutDialog" class="confirm-dialog" aria-labelledby="logoutTitle" aria-describedby="logoutDescription">
+  <h2 id="logoutTitle">Выйти из аккаунта?</h2>
+  <p id="logoutDescription">Ты выйдешь из аккаунта SMLT Max на этом устройстве.</p>
+  <div class="confirm-actions"><button id="cancelLogout" class="secondary" type="button">Отмена</button><button id="confirmLogout" class="danger-button" type="button">Выйти</button></div>
+</dialog>
+<script type="module" src="/app.js?v=3"></script>
+</body>
+</html>

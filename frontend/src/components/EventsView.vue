@@ -26,7 +26,7 @@ watch(() => props.events, list => {
   if (!selectedProject.value || !projects.value.some(event => event.id === selectedProject.value.id)) selectedProject.value = projects.value[0] || null
 }, {immediate: true})
 
-function videoUrl(event) { return `https://www.youtube-nocookie.com/embed/${event.videoId}?rel=0&modestbranding=1` }
+function videoUrl(event) { return `https://www.youtube.com/embed/${event.videoId}?rel=0&modestbranding=1` }
 function statusMeta(status) { return collabStatuses.find(item => item.id === status) || collabStatuses[3] }
 function statusLabel(status) { const item = statusMeta(status); return props.lang === 'en' ? item.en : item.ru }
 function extractYouTubeId(value) {
@@ -101,7 +101,7 @@ async function updateStatus(event, status) {
       <div class="section-head"><h2>{{ lang === 'en' ? 'SMLT Events' : 'Ивенты' }}</h2></div>
       <div class="video-layout">
         <div class="video-tabs" role="tablist"><div v-for="(event, index) in beats" :key="event.id" class="event-tab-row"><button role="tab" :aria-selected="selectedBeat && selectedBeat.id === event.id" :class="{active: selectedBeat && selectedBeat.id === event.id}" @click="selectedBeat = event">{{ event.title }}</button><template v-if="isAdmin"><button class="event-order" @click="move(event, -1)" :disabled="index === 0">↑</button><button class="event-order" @click="move(event, 1)" :disabled="index === beats.length - 1">↓</button><button class="event-order danger" @click="deleteEvent(event)">×</button></template></div></div>
-        <div v-if="selectedBeat" class="video-card"><iframe :src="videoUrl(selectedBeat)" :title="selectedBeat.title" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe><h3>{{ selectedBeat.title }}</h3></div>
+        <div v-if="selectedBeat" class="video-card"><iframe :src="videoUrl(selectedBeat)" :title="selectedBeat.title" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe><h3>{{ selectedBeat.title }}</h3></div>
       </div>
     </section>
     <section class="video-section collabs-section">
@@ -111,7 +111,7 @@ async function updateStatus(event, status) {
       </div>
       <div class="video-layout">
         <div class="video-tabs" role="tablist"><div v-for="(event, index) in projects" :key="event.id" class="event-tab-row"><span :class="['collab-status-square', `status-${statusMeta(event.status).id}`]" role="img" :aria-label="statusLabel(event.status)" :title="statusLabel(event.status)"></span><button role="tab" :aria-selected="selectedProject && selectedProject.id === event.id" :class="{active: selectedProject && selectedProject.id === event.id}" @click="selectedProject = event">{{ event.title }}</button><template v-if="isAdmin"><select class="event-status-select" :aria-label="lang === 'en' ? `Status: ${event.title}` : `Статус: ${event.title}`" :value="statusMeta(event.status).id" @change="updateStatus(event, $event.target.value)"><option v-for="status in collabStatuses" :key="status.id" :value="status.id">{{ lang === 'en' ? status.en : status.ru }}</option></select><button class="event-order" @click="move(event, -1)" :disabled="index === 0">↑</button><button class="event-order" @click="move(event, 1)" :disabled="index === projects.length - 1">↓</button><button class="event-order danger" @click="deleteEvent(event)">×</button></template></div></div>
-        <div v-if="selectedProject" class="video-card"><iframe :src="videoUrl(selectedProject)" :title="selectedProject.title" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe><h3>{{ selectedProject.title }}</h3></div>
+        <div v-if="selectedProject" class="video-card"><iframe :src="videoUrl(selectedProject)" :title="selectedProject.title" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe><h3>{{ selectedProject.title }}</h3></div>
       </div>
     </section>
   </div>

@@ -1,0 +1,14 @@
+# Python runtime/cache and local configuration
+__pycache__/
+*.py[cod]
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# Local messenger data and generated builds
+*.sqlite3
+*.sqlite3-*
+*.db
+dist/
