@@ -49,3 +49,31 @@ body.chat-open #lang{top:calc(2dvh + 12px)!important;right:calc(2vw + 12px)!impo
 @media(max-width:600px){body.chat-open main{width:96vw;height:96dvh;margin:2dvh auto}body.chat-open #lang{right:calc(2vw + 8px)!important}#chat>.top{padding-right:76px}#chat>.top>.row{margin-right:58px}}
 .menu-actions>*{flex:0 0 auto!important}.registration-nickname{display:grid;gap:4px;margin:18px 0 12px;padding:12px;border:1px solid #2b3948;border-radius:11px;background:#111820;text-align:left;overflow-wrap:anywhere}.registration-nickname strong{font-size:15px;color:#e8f2ff}.registration-nickname .muted{font-size:12px}
 @media(max-width:600px){#menu>.top{flex-wrap:wrap;align-items:center}#menu>.top>.menu-actions{justify-content:flex-end;flex:1;flex-wrap:wrap}#menu>.top>.menu-actions button{font-size:12px;padding:8px 9px}}
+
+/* Keep both the room list and the open chat comfortable on narrow phones. */
+@media(max-width:600px){
+  html,body{min-width:320px}
+  main{width:100%;padding:58px 12px 22px}
+  body.chat-open main{width:100%;height:100dvh;margin:0;padding:0}
+  body.chat-open #lang{top:10px!important;right:10px!important}
+  #menu.screen.active{min-height:calc(100dvh - 72px)}
+  #menu>.top{gap:8px;padding:10px 12px}
+  #menu>.top>.menu-actions{width:100%;margin:0;justify-content:stretch;gap:8px}
+  #menu>.top>.menu-actions button{flex:1 1 0!important;min-width:0;white-space:normal}
+  #menu>.card .row{align-items:stretch;gap:8px}
+  #menu>.card .row input{min-width:0}
+  #menu>.card .row button{flex:0 0 auto;padding:10px 12px}
+  .chat-item{gap:10px;padding:11px 10px}
+  .chat-item .chat-name{overflow-wrap:anywhere}
+  .chat-item .room-action{flex:0 0 auto;max-width:96px;white-space:normal}
+  #chat>.top{flex-wrap:wrap;gap:8px;padding:10px 72px 10px 10px}
+  #chat>.top>.row{width:100%;margin:0;gap:6px;overflow-x:auto;overscroll-behavior-x:contain}
+  #chat>.top>.row button{flex:0 0 auto;max-width:45vw;white-space:normal}
+  #chat>.card{min-height:0}
+  #chatTitle{overflow-wrap:anywhere}
+  #chatCode{overflow-wrap:anywhere;word-break:break-word}
+  #chat>.card>.messages{padding:10px 12px}
+  #chat>.card>.compose{gap:7px;padding:8px 9px calc(8px + env(safe-area-inset-bottom))}
+  #chat>.card>.compose textarea{min-width:0;min-height:44px}
+  #chat>.card>.compose button{flex:0 0 76px;width:76px;padding:9px 6px}
+}
