@@ -50,6 +50,12 @@ body.chat-open #lang{top:calc(2dvh + 12px)!important;right:calc(2vw + 12px)!impo
 .menu-actions>*{flex:0 0 auto!important}.registration-nickname{display:grid;gap:4px;margin:18px 0 12px;padding:12px;border:1px solid #2b3948;border-radius:11px;background:#111820;text-align:left;overflow-wrap:anywhere}.registration-nickname strong{font-size:15px;color:#e8f2ff}.registration-nickname .muted{font-size:12px}
 @media(max-width:600px){#menu>.top{flex-wrap:wrap;align-items:center}#menu>.top>.menu-actions{justify-content:flex-end;flex:1;flex-wrap:wrap}#menu>.top>.menu-actions button{font-size:12px;padding:8px 9px}}
 
+/* Profile actions and room actions use stable widths across phone sizes. */
+#menu>.top>.menu-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));flex:0 1 430px;align-items:stretch}
+#menu>.top>.menu-actions button{width:100%;min-width:0;min-height:44px;height:100%;padding:10px 12px;line-height:1.25;white-space:normal;overflow-wrap:anywhere}
+.chat-item .room-action{box-sizing:border-box;width:88px;min-width:88px;max-width:88px!important;min-height:40px;display:inline-flex;flex:0 0 88px!important;align-items:center;justify-content:center;text-align:center;line-height:1.2;white-space:normal}
+@media(max-width:600px){#menu>.top>.menu-actions{width:100%;flex:1 1 100%}#menu>.top>.menu-actions button{font-size:12px;padding:9px 7px}}
+
 /* Keep both the room list and the open chat comfortable on narrow phones. */
 @media(max-width:600px){
   html,body{min-width:320px}
