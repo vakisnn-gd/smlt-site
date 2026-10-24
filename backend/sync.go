@@ -243,7 +243,7 @@ func dbApplyStandingUpdates(updates []standingUpdate) (int, error) {
 }
 
 func getPlayersTx(tx *sql.Tx) ([]Player, error) {
-	rows, err := tx.Query("SELECT id, rank_order, country, name, points, demon, global_rank, COALESCE(demonlist_id, 0) FROM players ORDER BY points DESC, name ASC")
+	rows, err := tx.Query("SELECT id, rank_order, country, name, points, demon, demon_placement, global_rank, COALESCE(demonlist_id, 0) FROM players ORDER BY points DESC, name ASC")
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +251,7 @@ func getPlayersTx(tx *sql.Tx) ([]Player, error) {
 	players := []Player{}
 	for rows.Next() {
 		var player Player
-		if err := rows.Scan(&player.ID, &player.Rank, &player.Country, &player.Name, &player.Points, &player.Demon, &player.GlobalRank, &player.GDLID); err != nil {
+		if err := rows.Scan(&player.ID, &player.Rank, &player.Country, &player.Name, &player.Points, &player.Demon, &player.DemonPlacement, &player.GlobalRank, &player.GDLID); err != nil {
 			return nil, err
 		}
 		players = append(players, player)
@@ -326,7 +326,17 @@ func dbGetRecentRankChanges(limit int) ([]RankChange, error) {
 }
 
 func dbGetRecentPlayerEvents(limit int) ([]PlayerEvent, error) {
-	rows, err := db.Query("SELECT id, event_type, player_name, country, detail, created_at FROM player_events ORDER BY created_at DESC, id DESC LIMIT $1", limit)
+	rows, err := db.Query(`SELECT e.id, e.event_type, e.player_name, e.country, e.detail, e.created_at
+		FROM player_events e
+		WHERE NOT (
+			e.event_type = 'demon' AND EXISTS (
+				SELECT 1 FROM player_demon_sync_state s
+				JOIN players p ON p.id = s.player_id
+				WHERE lower(p.name) = lower(e.player_name)
+				AND e.created_at < s.initialized_at
+			)
+		)
+		ORDER BY e.created_at DESC, e.id DESC LIMIT $1`, limit)
 	if err != nil {
 		return nil, err
 	}

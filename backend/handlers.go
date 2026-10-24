@@ -158,20 +158,30 @@ func handleGetPlayers(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleRecentChanges(w http.ResponseWriter, r *http.Request) {
-	changes, err := dbGetRecentRankChanges(40)
+	const pageSize = 20
+	offset := 0
+	if raw := r.URL.Query().Get("offset"); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil || parsed < 0 || parsed > 10000 {
+			http.Error(w, "{\"success\":false,\"message\":\"Неверное смещение\"}", http.StatusBadRequest)
+			return
+		}
+		offset = parsed
+	}
+	fetchLimit := offset + pageSize
+	changes, err := dbGetRecentRankChanges(fetchLimit)
 	w.Header().Set("Content-Type", "application/json")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Ошибка базы данных"})
 		return
 	}
-	events, err := dbGetRecentPlayerEvents(40)
+	events, err := dbGetRecentPlayerEvents(fetchLimit)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Ошибка базы данных"})
 		return
 	}
-	// Keep one feed sorted by time while preserving the existing rank-change shape.
 	feed := make([]interface{}, 0, len(changes)+len(events))
 	for _, c := range changes {
 		feed = append(feed, c)
@@ -180,8 +190,18 @@ func handleRecentChanges(w http.ResponseWriter, r *http.Request) {
 		feed = append(feed, e)
 	}
 	sort.SliceStable(feed, func(i, j int) bool { return changeCreatedAt(feed[i]).After(changeCreatedAt(feed[j])) })
+	start := offset
+	if start > len(feed) {
+		start = len(feed)
+	}
+	end := start + pageSize
+	if end > len(feed) {
+		end = len(feed)
+	}
+	hasMore := end < len(feed) || len(changes) == fetchLimit || len(events) == fetchLimit
+	page := feed[start:end]
 	w.Header().Set("Cache-Control", "no-store")
-	json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "changes": feed})
+	json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "changes": page, "hasMore": hasMore})
 }
 
 func handlePlayerEventByMethod(w http.ResponseWriter, r *http.Request) {

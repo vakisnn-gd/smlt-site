@@ -18,7 +18,8 @@ export default createRouter({
     {path: '/en/about', name: 'en-about', component: EmptyRoute, meta: {view: 'about', lang: 'en'}},
     {path: '/en/player/:id(\\d+)', name: 'en-player', component: EmptyRoute, meta: {view: 'leaderboard', lang: 'en'}},
   ],
-  scrollBehavior() {
+  scrollBehavior(to, from) {
+    if (String(to.name).endsWith('player') || String(from.name).endsWith('player')) return false
     return {top: 0, behavior: 'smooth'}
   },
 })

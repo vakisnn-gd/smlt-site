@@ -104,6 +104,7 @@ img.flag { width: 26px; height: 18px; border-radius: 3px; object-fit: cover; box
 .title-icon { display: grid; place-items: center; width: 25px; height: 25px; color: var(--blue); font-size: 20px; }
 .empty-state { margin: 22px 3px 3px; color: var(--muted); }
 .change-scroll { max-height: 400px; margin-top: 8px; overflow: auto; scrollbar-color: #36414f transparent; }
+.change-load-sentinel { min-height: 1px; padding: 8px 0; color: var(--muted); text-align: center; font-size: 13px; }
 .date-divider { display: flex; align-items: center; gap: 12px; margin: 17px 0 3px; color: #6785b4; font-size: 10px; font-weight: 800; letter-spacing: .13em; }
 .date-divider::before, .date-divider::after { content: ''; flex: 1; height: 1px; background: var(--line); }
 .change-row { display: grid; grid-template-columns: 25px minmax(0, 1fr) auto; gap: 12px; padding: 13px 8px; border-bottom: 1px solid rgba(255,255,255,.045); }

@@ -14,6 +14,10 @@ import PlayerModal from './components/PlayerModal.vue'
 
 const players = ref([])
 const changes = ref([])
+const changesOffset = ref(0)
+const changesHasMore = ref(false)
+const loadingMoreChanges = ref(false)
+const changesPageSize = 20
 const events = ref([])
 const loading = ref(true)
 const error = ref('')
@@ -121,15 +125,37 @@ async function loadLeaderboard(force = false) {
   loading.value = true
   error.value = ''
   try {
-    const results = await Promise.allSettled([api.players(), api.changes()])
+    const results = await Promise.allSettled([api.players(), api.changes(0)])
     if (results[0].status === 'rejected') throw results[0].reason
     players.value = results[0].value.players || []
-    if (results[1].status === 'fulfilled') changes.value = results[1].value.changes || []
+    if (results[1].status === 'fulfilled') {
+      changes.value = results[1].value.changes || []
+      changesOffset.value = changes.value.length
+      changesHasMore.value = results[1].value.hasMore === true
+    }
     loaded.value.leaderboard = true
   } catch (err) {
     error.value = err.message
   } finally {
     loading.value = false
+  }
+}
+
+
+async function loadMoreChanges() {
+  if (loadingMoreChanges.value || !changesHasMore.value) return
+  loadingMoreChanges.value = true
+  try {
+    const result = await api.changes(changesOffset.value)
+    const page = result.changes || []
+    const known = new Set(changes.value.map(change => (change.eventType || 'rank') + '-' + change.id))
+    changes.value = [...changes.value, ...page.filter(change => !known.has((change.eventType || 'rank') + '-' + change.id))]
+    changesOffset.value += page.length
+    changesHasMore.value = result.hasMore === true
+  } catch (err) {
+    notice.value = err.message
+  } finally {
+    loadingMoreChanges.value = false
   }
 }
 
@@ -247,7 +273,7 @@ watch(players, updatePageMeta)
   <div class="app-shell">
     <AppHeader :view="view" :lang="lang" :is-admin="isAdmin" :rough-mode="roughMode" @navigate="navigate" @language="toggleLanguage" @easter-egg="showEasterEgg = true" @login="showLogin = true" @add="openAdd" @logout="logout" />
     <main>
-      <LeaderboardView v-if="view === 'leaderboard'" :players="players" :changes="changes" :loading="loading" :error="error" :lang="lang" :is-admin="isAdmin" :player-id="playerId" @edit="openEdit" @delete="removePlayer" @delete-change="removeChange" @retry="loadLeaderboard(true)" @open-player="id => router.push({name: routeName('player'), params: {id}})" @close-player="router.push({name: routeName('leaderboard')})" />
+      <LeaderboardView v-if="view === 'leaderboard'" :players="players" :changes="changes" :has-more-changes="changesHasMore" :loading-more-changes="loadingMoreChanges" :loading="loading" :error="error" :lang="lang" :is-admin="isAdmin" :player-id="playerId" @edit="openEdit" @delete="removePlayer" @delete-change="removeChange" @load-more-changes="loadMoreChanges" @retry="loadLeaderboard(true)" @open-player="id => router.push({name: routeName('player'), params: {id}})" @close-player="router.push({name: routeName('leaderboard')})" />
       <EventsView v-else-if="view === 'events'" :lang="lang" :events="events" :is-admin="isAdmin" @changed="reloadEvents" />
       <ChatsView v-else-if="view === 'chats'" :lang="lang" />
       <ToolsView v-else-if="view === 'tools'" :players="players" :lang="lang" :theme-mode="themeMode" :rough-mode="roughMode" :can-install="canInstall" @theme="toggleTheme" @style="toggleStyle" @install="installApp" @open-player="id => router.push({name: routeName('player'), params: {id}})" />

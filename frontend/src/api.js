@@ -15,7 +15,7 @@ async function request(path, options = {}) {
 
 export const api = {
   players: () => request(`/api/players?fresh=${Date.now()}`),
-  changes: () => request(`/api/recent-changes?fresh=${Date.now()}`),
+  changes: (offset = 0) => request('/api/recent-changes?offset=' + offset + '&fresh=' + Date.now()),
   deletePlayerEvent: id => request(`/api/player-events/${encodeURIComponent(id)}`, {method: 'DELETE'}),
   events: () => request(`/api/events?fresh=${Date.now()}`),
   addEvent: event => request('/api/events', {method: 'POST', body: JSON.stringify(event)}),

@@ -1,9 +1,23 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, ref, watchEffect } from 'vue'
 import { flagSrc } from '../data'
 
-const props = defineProps({changes: {type: Array, default: () => []}, players: {type: Array, default: () => []}, lang: String, isAdmin: Boolean})
-const emit = defineEmits(['delete'])
+const props = defineProps({changes: {type: Array, default: () => []}, players: {type: Array, default: () => []}, lang: String, isAdmin: Boolean, hasMore: Boolean, loadingMore: Boolean})
+const emit = defineEmits(['delete', 'load-more'])
+const scrollRef = ref(null)
+const sentinelRef = ref(null)
+let observer
+watchEffect(() => {
+  const root = scrollRef.value
+  const sentinel = sentinelRef.value
+  if (!('IntersectionObserver' in window) || !root || !sentinel) return
+  observer?.disconnect()
+  observer = new IntersectionObserver(entries => {
+    if (entries.some(entry => entry.isIntersecting) && props.hasMore && !props.loadingMore) emit('load-more')
+  }, {root, rootMargin: '0px 0px 120px 0px'})
+  observer.observe(sentinel)
+})
+onBeforeUnmount(() => observer?.disconnect())
 
 const playerMap = computed(() => new Map(props.players.map(player => [player.name.toLowerCase(), player])))
 
@@ -37,7 +51,7 @@ function dateTime(value) {
 
 const grouped = computed(() => {
   const groups = []
-  for (const change of props.changes.slice(0, 20)) {
+  for (const change of props.changes) {
     const label = dateLabel(change.createdAt)
     let group = groups.find(item => item.label === label)
     if (!group) { group = {label, changes: []}; groups.push(group) }
@@ -51,7 +65,7 @@ const grouped = computed(() => {
   <section class="panel recent-panel">
     <div class="panel-title"><span class="title-icon">↻</span><h2>{{ lang === 'en' ? 'Recent changes' : 'Недавние изменения' }}</h2></div>
     <p v-if="!changes.length" class="empty-state">{{ lang === 'en' ? 'Player additions, removals and position changes will appear here.' : 'Здесь появятся добавления, удаления игроков и изменения позиций.' }}</p>
-    <div v-else class="change-scroll">
+    <div v-else ref="scrollRef" class="change-scroll">
       <template v-for="group in grouped" :key="group.label">
         <div class="date-divider"><span>{{ group.label }}</span></div>
         <article v-for="change in group.changes" :key="`${change.eventType || 'rank'}-${change.id}`" class="change-row">
@@ -61,7 +75,7 @@ const grouped = computed(() => {
             <p v-if="change.eventType">
               <img class="country-flag" :src="flagSrc(eventCountry(change), 40)" :alt="eventCountry(change)" :title="eventCountry(change)">
               <strong>{{ change.playerName }}</strong>
-              {{ change.eventType === 'added' ? (lang === 'en' ? ' was added to the leaderboard' : ' добавлен в список') : change.eventType === 'removed' ? (lang === 'en' ? ' was removed from the leaderboard' : ' удалён из списка') : (lang === 'en' ? ' completed a new demon: ' : ' прошёл новый демон: ') }}<strong v-if="change.eventType === 'demon'">{{ change.detail }}</strong>
+              {{ change.eventType === 'added' ? (change.detail ? (lang === 'en' ? ' was added to the leaderboard at ' : ' добавлен в список на ') : (lang === 'en' ? ' was added to the leaderboard' : ' добавлен в список')) : change.eventType === 'removed' ? (lang === 'en' ? ' was removed from the leaderboard' : ' удалён из списка') : (lang === 'en' ? ' completed a new demon: ' : ' прошёл новый демон: ') }}<strong v-if="change.eventType === 'added' && change.detail">{{ change.detail }}</strong><template v-if="change.eventType === 'added' && change.detail"> {{ lang === 'en' ? 'place' : 'место' }}</template><strong v-if="change.eventType === 'demon'">{{ change.detail }}</strong>
             </p>
             <p v-else>
               <img class="country-flag" :src="flagSrc(eventCountry(change), 40)" :alt="eventCountry(change)" :title="eventCountry(change)">
@@ -74,6 +88,9 @@ const grouped = computed(() => {
           <button v-if="isAdmin && change.eventType" class="change-delete" type="button" :title="lang === 'en' ? 'Delete history entry' : 'Удалить запись из истории'" :aria-label="lang === 'en' ? 'Delete history entry' : 'Удалить запись из истории'" @click.stop="emit('delete', change)">×</button>
         </article>
       </template>
+      <div v-if="hasMore || loadingMore" ref="sentinelRef" class="change-load-sentinel" role="status" aria-live="polite">
+        {{ loadingMore ? (lang === 'en' ? 'Loading more…' : 'Загружаем ещё…') : '' }}
+      </div>
     </div>
   </section>
 </template>

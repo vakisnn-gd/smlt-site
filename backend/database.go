@@ -101,6 +101,7 @@ func initDB() {
 	);
 	CREATE INDEX IF NOT EXISTS idx_player_history_player_time ON player_history(player_id, recorded_at);
 	ALTER TABLE players ADD COLUMN IF NOT EXISTS demonlist_id BIGINT;
+	ALTER TABLE players ADD COLUMN IF NOT EXISTS demon_placement INTEGER NOT NULL DEFAULT 0;
 	CREATE TABLE IF NOT EXISTS rank_changes (
 		id BIGSERIAL PRIMARY KEY,
 		player_name VARCHAR(30) NOT NULL,
@@ -130,6 +131,10 @@ func initDB() {
 		demon_name VARCHAR(160) NOT NULL,
 		first_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 		PRIMARY KEY (player_id, demon_id)
+	);
+	CREATE TABLE IF NOT EXISTS player_demon_sync_state (
+		player_id INTEGER PRIMARY KEY REFERENCES players(id) ON DELETE CASCADE,
+		initialized_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 	);
 	CREATE TABLE IF NOT EXISTS events (
 		id SERIAL PRIMARY KEY,
@@ -278,7 +283,7 @@ func dbReorderEvents(ids []int) error {
 }
 
 func dbGetPlayers() ([]Player, error) {
-	rows, err := db.Query("SELECT id, rank_order, country, name, points, demon, global_rank, COALESCE(demonlist_id, 0), updated_at FROM players ORDER BY points DESC, name ASC")
+	rows, err := db.Query("SELECT id, rank_order, country, name, points, demon, demon_placement, global_rank, COALESCE(demonlist_id, 0), updated_at FROM players ORDER BY points DESC, name ASC")
 	if err != nil {
 		return nil, err
 	}
@@ -287,7 +292,7 @@ func dbGetPlayers() ([]Player, error) {
 	var players []Player
 	for rows.Next() {
 		var p Player
-		if err := rows.Scan(&p.ID, &p.Rank, &p.Country, &p.Name, &p.Points, &p.Demon, &p.GlobalRank, &p.GDLID, &p.UpdatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.Rank, &p.Country, &p.Name, &p.Points, &p.Demon, &p.DemonPlacement, &p.GlobalRank, &p.GDLID, &p.UpdatedAt); err != nil {
 			continue
 		}
 		players = append(players, p)
@@ -331,8 +336,13 @@ func dbAddPlayer(p Player) error {
 	}
 	refreshRanks()
 	db.Exec("INSERT INTO player_history (player_id, points, global_rank) VALUES ($1,$2,$3)", p.ID, p.Points, p.GlobalRank)
-	db.Exec("INSERT INTO player_events (event_type, player_name, country, detail) VALUES ('added',$1,$2,'')", p.Name, p.Country)
-	notifyPlayerEvent("player-added", fmt.Sprintf("%s **%s** добавлен в список", countryFlag(p.Country), p.Name))
+	var rank int
+	if err := db.QueryRow("SELECT rank_order FROM players WHERE id=$1", p.ID).Scan(&rank); err != nil {
+		return err
+	}
+	detail := fmt.Sprintf("#%d", rank)
+	db.Exec("INSERT INTO player_events (event_type, player_name, country, detail) VALUES ('added',$1,$2,$3)", p.Name, p.Country, detail)
+	notifyPlayerEvent("player-added", fmt.Sprintf("%s **%s** добавлен в список на **#%d место**", countryFlag(p.Country), p.Name, rank))
 	return nil
 }
 

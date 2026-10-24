@@ -4,12 +4,20 @@ import { countryMeta } from '../data'
 import RecentChanges from './RecentChanges.vue'
 import PlayerDetailsView from './PlayerDetailsView.vue'
 
-const props = defineProps({players: Array, changes: Array, loading: Boolean, error: String, lang: String, isAdmin: Boolean, playerId: String})
-const emit = defineEmits(['edit', 'delete', 'delete-change', 'retry', 'open-player', 'close-player'])
+const props = defineProps({players: Array, changes: Array, hasMoreChanges: Boolean, loadingMoreChanges: Boolean, loading: Boolean, error: String, lang: String, isAdmin: Boolean, playerId: String})
+const emit = defineEmits(['edit', 'delete', 'delete-change', 'load-more-changes', 'retry', 'open-player', 'close-player'])
 const search = ref('')
 const country = ref('ALL')
+const sortBy = ref('points')
 
-const sorted = computed(() => [...(props.players || [])].sort((a, b) => Number(b.points) - Number(a.points) || a.name.localeCompare(b.name)))
+const sorted = computed(() => [...(props.players || [])].sort((a, b) => {
+  if (sortBy.value === 'hardest') {
+    const ap = Number(a.demonPlacement) || Infinity
+    const bp = Number(b.demonPlacement) || Infinity
+    return ap - bp || Number(b.points) - Number(a.points) || a.name.localeCompare(b.name)
+  }
+  return Number(b.points) - Number(a.points) || a.name.localeCompare(b.name)
+}))
 const visible = computed(() => sorted.value.filter(player => {
   const matchesSearch = player.name.toLowerCase().includes(search.value.trim().toLowerCase())
   return matchesSearch && (country.value === 'ALL' || player.country === country.value)
@@ -35,6 +43,7 @@ const selected = computed(() => props.playerId ? sorted.value.find(player => Str
             <div class="section-kicker"><strong>{{ lang === 'en' ? 'Top players' : 'Топ игроков' }}</strong></div>
             <div class="filters">
               <label class="search-box"><span>⌕</span><input v-model="search" type="search" autocomplete="off" :placeholder="lang === 'en' ? 'Search player…' : 'Поиск игрока…'"></label>
+              <label class="select-box"><span class="sr-only">{{ lang === 'en' ? 'Sort by' : 'Сортировка' }}</span><select v-model="sortBy"><option value="points">{{ lang === 'en' ? 'Sort: points' : 'По очкам' }}</option><option value="hardest">{{ lang === 'en' ? 'Sort: hardest' : 'По хардесту' }}</option></select></label>
               <label class="select-box"><span class="sr-only">{{ lang === 'en' ? 'Country' : 'Страна' }}</span><select v-model="country"><option value="ALL">{{ lang === 'en' ? 'All countries' : 'Все страны' }}</option><option v-for="code in countries" :key="code" :value="code">{{ countryMeta(code, lang).name }}</option></select></label>
             </div>
           </div>
@@ -55,7 +64,7 @@ const selected = computed(() => props.playerId ? sorted.value.find(player => Str
                 <img v-if="countryMeta(player.country, lang).flagSrc" class="flag" :src="countryMeta(player.country, lang).flagSrc" :alt="countryMeta(player.country, lang).name" :title="countryMeta(player.country, lang).name"><span v-else class="flag" :title="countryMeta(player.country, lang).name">{{ countryMeta(player.country, lang).flag }}</span>
                 <div class="player-cell"><button class="player-name-button" @click.stop="emit('open-player', player.gdlId || player.id)">{{ player.name }}</button><small class="mobile-demon">{{ player.demon }}</small></div>
                 <strong class="points">{{ Number(player.points).toFixed(2) }}</strong>
-                <span class="demon">{{ player.demon || '—' }}</span>
+                <span class="demon">{{ player.demon || '—' }}<small v-if="player.demonPlacement"> #{{ player.demonPlacement }}</small></span>
                 <span class="global-rank">#{{ player.globalRank || '—' }}</span>
                 <div v-if="isAdmin" class="row-actions"><button title="Edit" @click="$emit('edit', player)">✎</button><button title="Delete" @click="$emit('delete', player)">×</button></div>
               </article>
@@ -64,7 +73,7 @@ const selected = computed(() => props.playerId ? sorted.value.find(player => Str
           </template>
         </section>
 
-        <RecentChanges :changes="changes" :players="players" :lang="lang" :is-admin="isAdmin" @delete="emit('delete-change', $event)" />
+        <RecentChanges :changes="changes" :players="players" :lang="lang" :is-admin="isAdmin" :has-more="hasMoreChanges" :loading-more="loadingMoreChanges" @delete="emit('delete-change', $event)" @load-more="emit('load-more-changes')" />
       </div>
 
       <aside class="panel countries-sidebar">

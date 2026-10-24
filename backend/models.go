@@ -3,15 +3,16 @@ package main
 import "time"
 
 type Player struct {
-	ID         int       `json:"id"`
-	Rank       int       `json:"rank"`
-	Country    string    `json:"country"`
-	Name       string    `json:"name"`
-	Points     float64   `json:"points"`
-	Demon      string    `json:"demon"`
-	GlobalRank int       `json:"globalRank"`
-	GDLID      int64     `json:"gdlId,omitempty"`
-	UpdatedAt  time.Time `json:"updatedAt,omitempty"`
+	ID             int       `json:"id"`
+	Rank           int       `json:"rank"`
+	Country        string    `json:"country"`
+	Name           string    `json:"name"`
+	Points         float64   `json:"points"`
+	Demon          string    `json:"demon"`
+	DemonPlacement int       `json:"demonPlacement"`
+	GlobalRank     int       `json:"globalRank"`
+	GDLID          int64     `json:"gdlId,omitempty"`
+	UpdatedAt      time.Time `json:"updatedAt,omitempty"`
 }
 
 type RankChange struct {
