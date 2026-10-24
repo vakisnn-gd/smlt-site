@@ -98,7 +98,6 @@ watch(() => props.player, load, {immediate: true})
         <span class="pdetails-chip">{{ lang === 'en' ? 'Player' : 'Игрок' }} {{ countryRank }} / {{ countryTotal }} {{ lang === 'en' ? 'of' : 'из' }} {{ countryMeta(player.country, lang).name }}</span>
         <a v-if="profileId" class="pdetails-chip pdetails-link" :href="`https://demonlist.org/profile/${profileId}`" target="_blank" rel="noopener">Demonlist ↗</a>
       </div>
-      <a v-if="profileId" :href="`https://demonlist.org/profile/${profileId}`" class="primary-button pdetails-open" target="_blank" rel="noopener">{{ lang === 'en' ? 'Open on Demonlist' : 'Открыть на Demonlist' }}</a>
       <div class="pdetails-levels">
         <div class="pdetails-levels-head"><h3>{{ lang === 'en' ? 'Completed levels' : 'Пройденные уровни' }}</h3><span v-if="levelsLoading" class="mini-loader"></span></div>
         <div v-if="levelsLoading" class="pdetails-levels-state">{{ lang === 'en' ? 'Loading levels…' : 'Загружаем уровни…' }}</div>

@@ -11,6 +11,9 @@ const country = ref('ALL')
 const sortBy = ref('points')
 
 const sorted = computed(() => [...(props.players || [])].sort((a, b) => {
+  if (sortBy.value === 'completed') {
+    return Number(b.completedLevels || 0) - Number(a.completedLevels || 0) || Number(b.points) - Number(a.points) || a.name.localeCompare(b.name)
+  }
   if (sortBy.value === 'hardest') {
     const ap = Number(a.demonPlacement) || Infinity
     const bp = Number(b.demonPlacement) || Infinity
@@ -44,7 +47,7 @@ const selected = computed(() => props.playerId ? sorted.value.find(player => Str
             <div class="section-kicker"><strong>{{ lang === 'en' ? 'Top players' : 'Топ игроков' }}</strong></div>
             <div class="filters">
               <label class="search-box"><span>⌕</span><input v-model="search" type="search" autocomplete="off" :placeholder="lang === 'en' ? 'Search player…' : 'Поиск игрока…'"></label>
-              <label class="select-box"><span class="sr-only">{{ lang === 'en' ? 'Sort by' : 'Сортировка' }}</span><select v-model="sortBy"><option value="points">{{ lang === 'en' ? 'Sort: points' : 'По очкам' }}</option><option value="hardest">{{ lang === 'en' ? 'Sort: hardest' : 'По хардесту' }}</option></select></label>
+              <label class="select-box"><span class="sr-only">{{ lang === 'en' ? 'Sort by' : 'Сортировка' }}</span><select v-model="sortBy"><option value="points">{{ lang === 'en' ? 'Sort: points' : 'По очкам' }}</option><option value="completed">{{ lang === 'en' ? 'Sort: completed levels' : 'По пройденным уровням' }}</option><option value="hardest">{{ lang === 'en' ? 'Sort: hardest' : 'По хардесту' }}</option></select></label>
               <label class="select-box"><span class="sr-only">{{ lang === 'en' ? 'Country' : 'Страна' }}</span><select v-model="country"><option value="ALL">{{ lang === 'en' ? 'All countries' : 'Все страны' }}</option><option v-for="code in countries" :key="code" :value="code">{{ countryMeta(code, lang).name }}</option></select></label>
             </div>
           </div>

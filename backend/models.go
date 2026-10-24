@@ -10,6 +10,7 @@ type Player struct {
 	Points         float64   `json:"points"`
 	Demon          string    `json:"demon"`
 	DemonPlacement int       `json:"demonPlacement"`
+	CompletedLevels int64    `json:"completedLevels"`
 	GlobalRank     int       `json:"globalRank"`
 	GDLID          int64     `json:"gdlId,omitempty"`
 	UpdatedAt      time.Time `json:"updatedAt,omitempty"`

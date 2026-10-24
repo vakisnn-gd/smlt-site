@@ -283,7 +283,11 @@ func dbReorderEvents(ids []int) error {
 }
 
 func dbGetPlayers() ([]Player, error) {
-	rows, err := db.Query("SELECT id, rank_order, country, name, points, demon, demon_placement, global_rank, COALESCE(demonlist_id, 0), updated_at FROM players ORDER BY points DESC, name ASC")
+	rows, err := db.Query(`SELECT id, rank_order, country, name, points, demon, demon_placement, global_rank,
+		COALESCE(demonlist_id, 0), updated_at,
+		CASE WHEN EXISTS (SELECT 1 FROM player_demon_sync_state s WHERE s.player_id=players.id)
+			THEN (SELECT COUNT(*) FROM player_demons d WHERE d.player_id=players.id) ELSE 0 END
+		FROM players ORDER BY points DESC, name ASC`)
 	if err != nil {
 		return nil, err
 	}
@@ -292,7 +296,7 @@ func dbGetPlayers() ([]Player, error) {
 	var players []Player
 	for rows.Next() {
 		var p Player
-		if err := rows.Scan(&p.ID, &p.Rank, &p.Country, &p.Name, &p.Points, &p.Demon, &p.DemonPlacement, &p.GlobalRank, &p.GDLID, &p.UpdatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.Rank, &p.Country, &p.Name, &p.Points, &p.Demon, &p.DemonPlacement, &p.GlobalRank, &p.GDLID, &p.UpdatedAt, &p.CompletedLevels); err != nil {
 			continue
 		}
 		players = append(players, p)

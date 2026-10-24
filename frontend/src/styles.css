@@ -238,7 +238,6 @@ img.flag { width: 26px; height: 18px; border-radius: 3px; object-fit: cover; box
 .pdetails-level-list a:hover { color: var(--blue); }
 .pdetails-lvl-name { min-width: 0; overflow: hidden; color: #e6ecf3; text-overflow: ellipsis; white-space: nowrap; }
 .pdetails-level-list small { color: var(--green); font-size: 12px; font-weight: 700; }
-.pdetails-open { width: 100%; margin-top: 20px; }
 .toast { position: fixed; right: 20px; bottom: 20px; z-index: 110; max-width: min(400px, calc(100% - 40px)); padding: 13px 17px; border: 1px solid #375170; border-radius: 11px; color: #d9eaff; background: #16283b; box-shadow: var(--shadow); cursor: pointer; }
 .toast-enter-active, .toast-leave-active { transition: .2s ease; }
 .toast-enter-from, .toast-leave-to { transform: translateY(10px); opacity: 0; }
