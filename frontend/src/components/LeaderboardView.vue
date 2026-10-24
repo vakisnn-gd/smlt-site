@@ -23,8 +23,9 @@ const visible = computed(() => sorted.value.filter(player => {
   return matchesSearch && (country.value === 'ALL' || player.country === country.value)
 }))
 const countries = computed(() => [...new Set(sorted.value.map(player => player.country))].sort((a, b) => (a === 'OTHER') - (b === 'OTHER') || a.localeCompare(b)))
-const total = computed(() => sorted.value.reduce((sum, player) => sum + Number(player.points || 0), 0))
-const average = computed(() => sorted.value.length ? total.value / sorted.value.length : 0)
+const statsPlayers = computed(() => country.value === 'ALL' ? sorted.value : sorted.value.filter(player => player.country === country.value))
+const total = computed(() => statsPlayers.value.reduce((sum, player) => sum + Number(player.points || 0), 0))
+const average = computed(() => statsPlayers.value.length ? total.value / statsPlayers.value.length : 0)
 const countryStats = computed(() => {
   const counts = new Map()
   for (const player of sorted.value) counts.set(player.country, (counts.get(player.country) || 0) + 1)
@@ -49,9 +50,9 @@ const selected = computed(() => props.playerId ? sorted.value.find(player => Str
           </div>
 
           <div class="leaderboard-stats">
-            <div class="stat"><strong>{{ players.length }}</strong><small>{{ lang === 'en' ? 'Total players' : 'Всего игроков' }}</small></div>
+            <div class="stat"><strong>{{ statsPlayers.length }}</strong><small>{{ country === 'ALL' ? (lang === 'en' ? 'Total players' : 'Всего игроков') : (lang === 'en' ? 'Players in country' : 'Игроков в стране') }}</small></div>
             <div class="stat"><strong>{{ average.toFixed(2) }}</strong><small>{{ lang === 'en' ? 'Average points' : 'Средние очки' }}</small></div>
-            <div class="stat accent"><strong>{{ total.toFixed(2) }}</strong><small>{{ lang === 'en' ? 'Total points' : 'Общее количество очков' }}</small></div>
+            <div class="stat accent"><strong>{{ total.toFixed(2) }}</strong><small>{{ country === 'ALL' ? (lang === 'en' ? 'Total points' : 'Общее количество очков') : (lang === 'en' ? 'Country points' : 'Очки страны') }}</small></div>
           </div>
 
           <div v-if="loading" class="large-state"><span class="loader"></span><p>{{ lang === 'en' ? 'Loading leaderboard…' : 'Загружаем рейтинг…' }}</p></div>
