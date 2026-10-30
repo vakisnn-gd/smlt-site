@@ -31,6 +31,6 @@ corepack pnpm run build
 ## Доступ и выкладка
 
 Разработчики работают только с этим репозиторием через отдельные ветки и Pull
-Request. Исходники Go-бекенда, PostgreSQL, `.env`, SSH-ключи и VPS в репозиторий
+Request. Конфигурация PostgreSQL, `.env`, SSH-ключи и доступ к VPS в репозиторий
 не входят и через GitHub не выдаются. Правила для участников — в
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
