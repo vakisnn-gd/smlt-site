@@ -186,6 +186,13 @@ img.flag { width: 26px; height: 18px; border-radius: 3px; object-fit: cover; box
 .account-links span { color: var(--muted); font-size: 12px; }
 
 .modal-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 18px; background: rgba(0,0,0,.72); backdrop-filter: blur(8px); }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 125; padding: 10px 14px; transform: translateY(calc(-100% - 16px)); border: 2px solid #fff; border-radius: 8px; color: #fff; background: #2864a7; font-weight: 700; text-decoration: none; }
+.skip-link:focus { transform: translateY(0); }
+.archive-notice-backdrop { position: fixed; inset: 0; z-index: 130; display: grid; place-items: center; padding: 18px; background: rgba(0,0,0,.78); backdrop-filter: blur(9px); }
+.archive-notice { max-height: calc(100vh - 36px); }
+.archive-notice .eyebrow { padding-right: 42px; }
+.archive-notice-message { margin: 12px 0 24px; color: var(--muted); line-height: 1.6; }
+.archive-notice-button { min-height: 44px; }
 .modal { position: relative; width: min(540px, 100%); max-height: calc(100vh - 200px); overflow: auto; padding: 30px; border: 1px solid var(--line-bright); border-radius: 18px; background: #13171c; box-shadow: 0 28px 100px rgba(0,0,0,.55); }
 .small-modal { width: min(440px, 100%); }
 .modal h2 { margin: 0; font-size: 27px; }
@@ -638,12 +645,27 @@ html[data-style="rough"][data-theme="light"] {
 }
 html[data-style="rough"][data-theme="light"] body, html[data-style="rough"][data-theme="light"] .app-shell { color: var(--text); background: var(--bg); }
 html[data-style="rough"][data-theme="light"] .site-header { border-bottom-color: #111; background: rgba(255,255,255,.92); }
+html[data-style="rough"][data-theme="light"] .skip-link { border-color: #111; border-radius: 9px; color: #fff; background: #111; }
+html[data-style="rough"][data-theme="light"] .leaderboard-toolbar { border-bottom: 2px dashed #111; }
+html[data-style="rough"][data-theme="light"] .leaderboard-stats .stat strong,
+html[data-style="rough"][data-theme="light"] .leaderboard-stats .stat small,
+html[data-style="rough"][data-theme="light"] .table-header,
+html[data-style="rough"][data-theme="light"] .section-kicker strong { color: #111; }
 html[data-style="rough"][data-theme="light"] .primary-nav button, html[data-style="rough"][data-theme="light"] .lang-button, html[data-style="rough"][data-theme="light"] .icon-button { color: #333; }
 html[data-style="rough"][data-theme="light"] .primary-nav button:hover, html[data-style="rough"][data-theme="light"] .primary-nav button.active { color: #111; background: #e1e1dd; }
 html[data-style="rough"][data-theme="light"] .leaderboard-card, html[data-style="rough"][data-theme="light"] .panel, html[data-style="rough"][data-theme="light"] .tool-card, html[data-style="rough"][data-theme="light"] .page-heading, html[data-style="rough"][data-theme="light"] .about-hero, html[data-style="rough"][data-theme="light"] .about-grid article, html[data-style="rough"][data-theme="light"] .contacts-panel, html[data-style="rough"][data-theme="light"] .video-card, html[data-style="rough"][data-theme="light"] .modal { color: #111; background: #fff; }
 html[data-style="rough"][data-theme="light"] .search-box, html[data-style="rough"][data-theme="light"] .select-box select, html[data-style="rough"][data-theme="light"] .modal input, html[data-style="rough"][data-theme="light"] .modal select, html[data-style="rough"][data-theme="light"] .compare-pickers select { color: #111; background: #fff; }
+html[data-style="rough"][data-theme="light"] .search-box, html[data-style="rough"][data-theme="light"] .select-box select { border: 2px solid #111; }
+html[data-style="rough"][data-theme="light"] .search-box span { color: #333; }
 html[data-style="rough"][data-theme="light"] .player-cell a, html[data-style="rough"][data-theme="light"] .player-cell strong, html[data-style="rough"][data-theme="light"] .player-name-button, html[data-style="rough"][data-theme="light"] .points, html[data-style="rough"][data-theme="light"] .global-rank, html[data-style="rough"][data-theme="light"] .compare-player-name { color: #111; }
+html[data-style="rough"][data-theme="light"] .player-row { color: #222; background: #fff; }
+html[data-style="rough"][data-theme="light"] .player-row.top-three { background: #eeeeeb; }
+html[data-style="rough"][data-theme="light"] .player-row:hover { background: #e3e3df; }
+html[data-style="rough"][data-theme="light"] .leaderboard-stats,
+html[data-style="rough"][data-theme="light"] .leaderboard-stats .stat { background: #eeeeeb; }
 html[data-style="rough"][data-theme="light"] .rank, html[data-style="rough"][data-theme="light"] .demon, html[data-style="rough"][data-theme="light"] .country-list button, html[data-style="rough"][data-theme="light"] .change-row p, html[data-style="rough"][data-theme="light"] .change-row strong { color: #444; }
+html[data-style="rough"][data-theme="light"] .change-row strong { color: #222; }
+html[data-style="rough"][data-theme="light"] .change-row a { color: #245b94; }
 html[data-style="rough"][data-theme="light"] .primary-button { color: #fff; border-color: #111; background: #111; }
 html[data-style="rough"][data-theme="light"] .secondary-button, html[data-style="rough"][data-theme="light"] .lang-button, html[data-style="rough"][data-theme="light"] .icon-button { color: #111; border-color: #111; background: #fff; }
 html[data-style="rough"][data-theme="light"] .primary-nav, html[data-style="rough"][data-theme="light"] .country-list button, html[data-style="rough"][data-theme="light"] .stat, html[data-style="rough"][data-theme="light"] .pdetails-stat, html[data-style="rough"][data-theme="light"] .pdetails-chip, html[data-style="rough"][data-theme="light"] .compare-card, html[data-style="rough"][data-theme="light"] .random-result { background: #eeeeeb; }

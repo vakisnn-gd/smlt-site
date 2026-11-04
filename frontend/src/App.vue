@@ -33,6 +33,8 @@ const editingPlayer = ref(null)
 const showPlayerModal = ref(false)
 const notice = ref('')
 const showEasterEgg = ref(false)
+const showArchiveNotice = ref(localStorage.getItem('smlt-archive-notice-seen') !== '1')
+const archiveNoticeClose = ref(null)
 const route = useRoute()
 const router = useRouter()
 const loaded = ref({leaderboard: false, events: false})
@@ -48,6 +50,11 @@ function applyStyle() {
   document.documentElement.dataset.style = roughMode.value ? 'rough' : 'classic'
   document.documentElement.dataset.theme = themeMode.value
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', themeMode.value === 'light' ? '#f3f6fa' : '#0b0d10')
+}
+
+function dismissArchiveNotice() {
+  showArchiveNotice.value = false
+  localStorage.setItem('smlt-archive-notice-seen', '1')
 }
 
 applyStyle()
@@ -242,6 +249,7 @@ async function reloadEvents() {
 }
 
 onMounted(() => {
+  archiveNoticeClose.value?.focus()
   lang.value = route.meta.lang || 'ru'
   applyStyle()
   document.documentElement.lang = lang.value
@@ -271,8 +279,19 @@ watch(players, updatePageMeta)
 
 <template>
   <div class="app-shell">
+    <a v-if="!showArchiveNotice" class="skip-link" href="#main-content">{{ lang === 'en' ? 'Skip to content' : 'Перейти к содержимому' }}</a>
+    <div v-if="showArchiveNotice" class="archive-notice-backdrop">
+      <section class="modal archive-notice" role="dialog" aria-modal="true" aria-labelledby="archive-notice-title" :aria-describedby="lang === 'en' ? 'archive-notice-message-en' : 'archive-notice-message-ru'" @keydown.esc="dismissArchiveNotice" tabindex="-1">
+        <button ref="archiveNoticeClose" class="modal-close" :aria-label="lang === 'en' ? 'Close archive notice' : 'Закрыть уведомление'" @click="dismissArchiveNotice">×</button>
+        <p class="eyebrow">{{ lang === 'en' ? 'COMMUNITY ARCHIVE' : 'АРХИВ СООБЩЕСТВА' }}</p>
+        <h2 id="archive-notice-title">{{ lang === 'en' ? 'SMLT is no longer active' : 'SMLT больше нет' }}</h2>
+        <p v-if="lang === 'en'" id="archive-notice-message-en" class="archive-notice-message">The site has been archived.</p>
+        <p v-else id="archive-notice-message-ru" class="archive-notice-message">Сайт находится в архиве.</p>
+        <button class="primary-button archive-notice-button" @click="dismissArchiveNotice">{{ lang === 'en' ? 'View the archive' : 'Открыть архив' }}</button>
+      </section>
+    </div>
     <AppHeader :view="view" :lang="lang" :is-admin="isAdmin" :rough-mode="roughMode" @navigate="navigate" @language="toggleLanguage" @easter-egg="showEasterEgg = true" @login="showLogin = true" @add="openAdd" @logout="logout" />
-    <main>
+    <main id="main-content" tabindex="-1">
       <LeaderboardView v-if="view === 'leaderboard'" :players="players" :changes="changes" :has-more-changes="changesHasMore" :loading-more-changes="loadingMoreChanges" :loading="loading" :error="error" :lang="lang" :is-admin="isAdmin" :player-id="playerId" @edit="openEdit" @delete="removePlayer" @delete-change="removeChange" @load-more-changes="loadMoreChanges" @retry="loadLeaderboard(true)" @open-player="id => router.push({name: routeName('player'), params: {id}})" @close-player="router.push({name: routeName('leaderboard')})" />
       <EventsView v-else-if="view === 'events'" :lang="lang" :events="events" :is-admin="isAdmin" @changed="reloadEvents" />
       <ChatsView v-else-if="view === 'chats'" :lang="lang" />
